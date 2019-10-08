@@ -8,8 +8,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <kotlin.version>1.2.60</kotlin.version>
-        <tornadofx.version>1.7.17</tornadofx.version>
+        <tornadofx.version>1.7.19</tornadofx.version>
+        <kotlin.version>1.3.50</kotlin.version>
     </properties>
 
     <dependencies>
@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jre8</artifactId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
             <version>${kotlin.version}</version>
         </dependency>
     </dependencies>
