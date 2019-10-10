@@ -3,12 +3,10 @@ package org.graphwalker.views
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
-import javafx.scene.control.TabPane
-import javafx.scene.effect.DropShadow
 import javafx.scene.paint.Color
 import tornadofx.*
 
-class NevModelEditorEvent(val title: String) : FXEvent()
+class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
 
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     override val root = borderpane {
@@ -22,7 +20,8 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 graphic = icon(FontAwesomeIcon.PLUS)
                 action {
                     println("Open a new model editor")
-                    fire(NevModelEditorEvent("Untitled-$numOfModels"))
+                    numOfModels++
+                    fire(NevModelEditorEvent(ModelEditor("Untitled-$numOfModels")))
                 }
                 style {
                     backgroundColor += Color.BLACK
@@ -76,7 +75,9 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         center = stackpane {
             tabpane {
                 subscribe<NevModelEditorEvent> { event ->
-                    add(ModelEditor(event.title))
+                    tab(event.modelEditor) {
+                        text = event.modelEditor.title
+                    }
                 }
             }
             group {
@@ -90,9 +91,9 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         }
     }
 
-     private fun icon(icon: FontAwesomeIcon) = FontAwesomeIconView(icon).apply {
-         glyphSize = 18
-         fill = Color.WHITESMOKE
-     }
+    private fun icon(icon: FontAwesomeIcon) = FontAwesomeIconView(icon).apply {
+        glyphSize = 18
+        fill = Color.WHITESMOKE
+    }
 }
 

@@ -11,6 +11,7 @@
         <tornadofx.version>1.7.19</tornadofx.version>
         <kotlin.version>1.3.50</kotlin.version>
         <fontawesome.version>8.9</fontawesome.version>
+        <graphwalker.version>4.0.1</graphwalker.version>
     </properties>
 
     <dependencies>
@@ -28,6 +29,16 @@
             <groupId>de.jensd</groupId>
             <artifactId>fontawesomefx</artifactId>
             <version>${fontawesome.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graphwalker</groupId>
+            <artifactId>graphwalker-core</artifactId>
+            <version>${graphwalker.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.graphwalker</groupId>
+            <artifactId>graphwalker-io</artifactId>
+            <version>${graphwalker.version}</version>
         </dependency>
     </dependencies>
 
