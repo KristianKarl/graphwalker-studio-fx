@@ -40,8 +40,14 @@ class EdgeFX(edge: Edge.RuntimeEdge) {
     val element = edge
 
     fun getLine(): Line {
-        val start = vertices.filter { it.element.id == element.sourceVertex.id }[0]
+        var start: VertexFX
         val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
+        if (element.sourceVertex != null) {
+            start = vertices.filter { it.element.id == element.sourceVertex.id }[0]
+        } else {
+            start = end
+        }
+
         var line = Line()
         line.startXProperty().bind(start.layoutXProperty())
         line.startYProperty().bind(start.layoutYProperty())
