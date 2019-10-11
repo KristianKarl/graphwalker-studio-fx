@@ -84,11 +84,14 @@ class ModelEditor(title: String) : View(title) {
             val contexts = readGraphWalkerModel("/home/krikar/dev/graphwalker/graphwalker-project/graphwalker-studio/src/test/resources/json/UC01.json")
             for (context in contexts) {
                 for (vertex in context.model.vertices) {
-                    add(createVertex(vertex))
+                    createVertex(vertex)
                 }
                 for (edge in context.model.edges) {
                     add(createEdge(edge))
                 }
+            }
+            for (vertexFX in vertices) {
+                add(vertexFX)
             }
         }
 
