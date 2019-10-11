@@ -12,13 +12,49 @@ import org.graphwalker.io.factory.json.JsonContextFactory
 import tornadofx.*
 import java.nio.file.Paths
 
-private var StackPane.v: Vertex.RuntimeVertex
-    get() {return v}
-    set(vertex: Vertex.RuntimeVertex) {v=vertex}
+class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
+    val element = vertex
+
+    init {
+        rectangle {
+            fill = Color.LIGHTBLUE
+            height = 20.0
+            width = 50.0
+            strokeWidth = 1.0
+            stroke = Color.BLACK
+        }
+
+        label {
+            text = vertex.name
+        }
+
+        if (element.hasProperty("x") && element.hasProperty("y")) {
+            layoutX = element.getProperty("x").toString().toDouble()
+            layoutY = element.getProperty("y").toString().toDouble()
+        }
+    }
+}
+
+class EdgeFX(edge: Edge.RuntimeEdge) : StackPane() {
+    val element = edge
+
+    init {
+        val start = vertices.filter { it.element.id == edge.sourceVertex.id }[0]
+        val end = vertices.filter { it.element.id == edge.targetVertex.id }[0]
+        line {
+            startX = start.layoutX
+            startY = start.layoutY
+            endX = end.layoutX
+            endY = end.layoutY
+        }
+    }
+}
+
+val vertices = mutableListOf<VertexFX>()
 
 class ModelEditor(title: String) : View(title) {
+
     var workArea: Pane by singleAssign()
-    val vertices = mutableListOf<StackPane>()
     var selectedVertex: StackPane? = null
     var selectedOffset: Point2D? = null
 
@@ -28,38 +64,14 @@ class ModelEditor(title: String) : View(title) {
                 backgroundColor += Color.WHITESMOKE
             }
 
-            fun createEdge(edge : Edge.RuntimeEdge): StackPane {
-                return stackpane {
-                    val start = vertices.filter { it.v.id == edge.sourceVertex.id }[0]
-                    val end = vertices.filter { it.v.id == edge.targetVertex.id }[0]
-                    line {
-                        startX = start.layoutX
-                        startY = start.layoutY
-                        endX = end.layoutX
-                        endY = end.layoutY
-                    }
-                }
+            fun createEdge(edge: Edge.RuntimeEdge): EdgeFX {
+                return EdgeFX(edge)
             }
 
-            fun createVertex(vertex : Vertex.RuntimeVertex): StackPane {
-                return stackpane {
-                    rectangle {
-                        fill = Color.LIGHTBLUE
-                        height = 20.0
-                        width = 50.0
-                        strokeWidth = 1.0
-                        stroke = Color.BLACK
-                    }
-                    label {
-                        text = vertex.name
-                    }
-                    if (vertex.hasProperty("x") && vertex.hasProperty("y")) {
-                        layoutX = vertex.getProperty("x").toString().toDouble()
-                        layoutY = vertex.getProperty("y").toString().toDouble()
-                    }
-                    v = vertex
-                    vertices.add(this)
-                }
+            fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
+                var vertexFX = VertexFX(vertex)
+                vertices.add(vertexFX)
+                return vertexFX
             }
 
             fun readGraphWalkerModel(fileName: String): List<Context> {
@@ -70,19 +82,19 @@ class ModelEditor(title: String) : View(title) {
             val contexts = readGraphWalkerModel("/home/krikar/dev/graphwalker/graphwalker-project/graphwalker-studio/src/test/resources/json/UC01.json")
             for (context in contexts) {
                 for (vertex in context.model.vertices) {
-                    if (vertex.hasProperty("x") && vertex.hasProperty("y")) {
-                        createVertex(vertex)
-                    }
+                    add(createVertex(vertex))
                 }
                 for (edge in context.model.edges) {
-                    createEdge(edge)
+                    add(createEdge(edge))
                 }
             }
         }
+
         addEventFilter(MouseEvent.MOUSE_PRESSED, ::startDrag)
         addEventFilter(MouseEvent.MOUSE_DRAGGED, ::drag)
         addEventFilter(MouseEvent.MOUSE_RELEASED, ::stopDrag)
     }
+
 
     private fun startDrag(evt: MouseEvent) {
         vertices
