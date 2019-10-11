@@ -5,6 +5,7 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
+import javafx.scene.shape.Line
 import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
@@ -35,18 +36,18 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     }
 }
 
-class EdgeFX(edge: Edge.RuntimeEdge) : StackPane() {
+class EdgeFX(edge: Edge.RuntimeEdge) {
     val element = edge
 
-    init {
-        val start = vertices.filter { it.element.id == edge.sourceVertex.id }[0]
-        val end = vertices.filter { it.element.id == edge.targetVertex.id }[0]
-        line {
-            startX = start.layoutX
-            startY = start.layoutY
-            endX = end.layoutX
-            endY = end.layoutY
-        }
+    fun getLine(): Line {
+        val start = vertices.filter { it.element.id == element.sourceVertex.id }[0]
+        val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
+        var line = Line()
+        line.startXProperty().bind(start.layoutXProperty())
+        line.startYProperty().bind(start.layoutYProperty())
+        line.endXProperty().bind(end.layoutXProperty())
+        line.endYProperty().bind(end.layoutYProperty())
+        return line
     }
 }
 
@@ -64,8 +65,9 @@ class ModelEditor(title: String) : View(title) {
                 backgroundColor += Color.WHITESMOKE
             }
 
-            fun createEdge(edge: Edge.RuntimeEdge): EdgeFX {
-                return EdgeFX(edge)
+            fun createEdge(edge: Edge.RuntimeEdge): Line {
+                var edgeFx = EdgeFX(edge)
+                return edgeFx.getLine()
             }
 
             fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
