@@ -1,11 +1,17 @@
 package org.graphwalker.views
 
+import com.sun.javafx.tk.Toolkit
 import javafx.geometry.Point2D
+import javafx.scene.control.Label
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Line
+import javafx.scene.shape.Rectangle
+import javafx.scene.text.Font
+import javafx.scene.text.FontPosture
+import javafx.scene.text.FontWeight
 import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
@@ -13,21 +19,26 @@ import org.graphwalker.io.factory.json.JsonContextFactory
 import tornadofx.*
 import java.nio.file.Paths
 
+val vertices = mutableListOf<VertexFX>()
+var fontLoader = Toolkit.getToolkit().fontLoader
+
+
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
+    var label: Label by singleAssign()
+    var rectangle: Rectangle by singleAssign()
 
     init {
-        rectangle {
-            fill = Color.LIGHTBLUE
-            height = 20.0
-            width = 50.0
-            strokeWidth = 1.0
-            stroke = Color.BLACK
-        }
+        rectangle = Rectangle(30.0, 50.0)
+        rectangle.fill = Color.LIGHTBLUE
+        rectangle.strokeWidth = 1.0
+        rectangle.stroke = Color.BLACK
+        add(rectangle)
 
-        label {
-            text = vertex.name
-        }
+        label = Label(vertex.name)
+        label.font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+        add(label)
+
 
         if (element.hasProperty("x") && element.hasProperty("y")) {
             layoutX = element.getProperty("x").toString().toDouble()
@@ -42,22 +53,21 @@ class EdgeFX(edge: Edge.RuntimeEdge) {
     fun getLine(): Line {
         var start: VertexFX
         val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
-        if (element.sourceVertex != null) {
-            start = vertices.filter { it.element.id == element.sourceVertex.id }[0]
+        start = if (element.sourceVertex != null) {
+            vertices.filter { it.element.id == element.sourceVertex.id }[0]
         } else {
-            start = end
+            end
         }
 
         var line = Line()
-        line.startXProperty().bind(start.layoutXProperty())
-        line.startYProperty().bind(start.layoutYProperty())
-        line.endXProperty().bind(end.layoutXProperty())
-        line.endYProperty().bind(end.layoutYProperty())
+        line.startXProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
+        line.startYProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
+        line.endXProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
+        line.endYProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
         return line
     }
 }
 
-val vertices = mutableListOf<VertexFX>()
 
 class ModelEditor(title: String) : View(title) {
 
@@ -68,7 +78,7 @@ class ModelEditor(title: String) : View(title) {
     override val root = stackpane {
         workArea = pane {
             style {
-                backgroundColor += Color.WHITESMOKE
+                backgroundColor += Color.LIGHTYELLOW
             }
 
             fun createEdge(edge: Edge.RuntimeEdge): Line {
@@ -78,6 +88,8 @@ class ModelEditor(title: String) : View(title) {
 
             fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
                 var vertexFX = VertexFX(vertex)
+                vertexFX.rectangle.width = fontLoader.computeStringWidth(vertexFX.label.text, vertexFX.label.font).toDouble()
+                vertexFX.rectangle.height = fontLoader.getFontMetrics(vertexFX.label.font).lineHeight.toDouble()
                 vertices.add(vertexFX)
                 return vertexFX
             }
