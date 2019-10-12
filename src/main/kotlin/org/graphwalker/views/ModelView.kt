@@ -3,6 +3,7 @@ package org.graphwalker.views
 import com.sun.javafx.tk.Toolkit
 import javafx.geometry.Point2D
 import javafx.scene.control.Label
+import javafx.scene.control.ScrollPane
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
@@ -77,8 +78,9 @@ class ModelEditor(title: String) : View(title) {
     var selectedVertex: StackPane? = null
     var selectedOffset: Point2D? = null
 
-    override val root = stackpane {
+    override val root = scrollpane {
         workArea = pane {
+
             style {
                 backgroundColor += Color.LIGHTYELLOW
             }
@@ -144,8 +146,7 @@ class ModelEditor(title: String) : View(title) {
     }
 
     private fun drag(evt: MouseEvent) {
-
-        val mousePt: Point2D = (evt.source as Pane).sceneToLocal(evt.sceneX, evt.sceneY)
+        val mousePt: Point2D = (evt.source as ScrollPane).sceneToLocal(evt.sceneX, evt.sceneY)
         if (selectedVertex != null && selectedOffset != null) {
 
             selectedVertex!!.relocate(
