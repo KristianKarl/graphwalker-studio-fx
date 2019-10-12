@@ -25,20 +25,22 @@ var fontLoader = Toolkit.getToolkit().fontLoader
 
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
-    var label: Label by singleAssign()
-    var rectangle: Rectangle by singleAssign()
+    var text: Label by singleAssign()
+    var rect: Rectangle by singleAssign()
 
     init {
-        rectangle = Rectangle(30.0, 50.0)
-        rectangle.fill = Color.LIGHTBLUE
-        rectangle.strokeWidth = 1.0
-        rectangle.stroke = Color.BLACK
-        add(rectangle)
+        rect = rectangle {
+            fill = Color.LIGHTBLUE
+            height = 20.0
+            width = 50.0
+            strokeWidth = 1.0
+            stroke = Color.BLACK
+        }
 
-        label = Label(vertex.name)
-        label.font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
-        add(label)
-
+        text = label {
+            text = vertex.name
+            font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+        }
 
         if (element.hasProperty("x") && element.hasProperty("y")) {
             layoutX = element.getProperty("x").toString().toDouble()
@@ -88,8 +90,8 @@ class ModelEditor(title: String) : View(title) {
 
             fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
                 var vertexFX = VertexFX(vertex)
-                vertexFX.rectangle.width = fontLoader.computeStringWidth(vertexFX.label.text, vertexFX.label.font).toDouble()
-                vertexFX.rectangle.height = fontLoader.getFontMetrics(vertexFX.label.font).lineHeight.toDouble()
+                vertexFX.rect.width = fontLoader.computeStringWidth(vertexFX.text.text, vertexFX.text.font).toDouble()
+                vertexFX.rect.height = fontLoader.getFontMetrics(vertexFX.text.font).lineHeight.toDouble()
                 vertices.add(vertexFX)
                 return vertexFX
             }
