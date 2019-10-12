@@ -4,7 +4,9 @@ import javafx.application.Application
 import org.graphwalker.views.GraphWalkerStudioView
 import tornadofx.*
 
-class GraphWalkerStudioFX : App(GraphWalkerStudioView::class, Styles::class) {
+class GraphWalkerStudioFX : App() {
+    override val primaryView = GraphWalkerStudioView::class
+
     init {
         importStylesheet(Styles::class)
         reloadStylesheetsOnFocus()

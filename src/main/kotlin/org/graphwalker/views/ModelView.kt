@@ -1,5 +1,6 @@
 package org.graphwalker.views
 
+import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
 import javafx.geometry.Point2D
 import javafx.scene.control.Label
@@ -16,13 +17,11 @@ import javafx.scene.text.FontWeight
 import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
-import org.graphwalker.io.factory.json.JsonContextFactory
+import org.graphwalker.io.factory.json.JsonContext
 import tornadofx.*
-import java.nio.file.Paths
 
 val vertices = mutableListOf<VertexFX>()
-var fontLoader = Toolkit.getToolkit().fontLoader
-
+var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
 
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
@@ -51,10 +50,10 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
 }
 
 class EdgeFX(edge: Edge.RuntimeEdge) {
-    val element = edge
+    private val element = edge
 
     fun getLine(): Line {
-        var start: VertexFX
+        val start: VertexFX
         val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
         start = if (element.sourceVertex != null) {
             vertices.filter { it.element.id == element.sourceVertex.id }[0]
@@ -62,7 +61,7 @@ class EdgeFX(edge: Edge.RuntimeEdge) {
             end
         }
 
-        var line = Line()
+        val line = Line()
         line.startXProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
         line.startYProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
         line.endXProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
@@ -72,48 +71,34 @@ class EdgeFX(edge: Edge.RuntimeEdge) {
 }
 
 
-class ModelEditor(title: String) : View(title) {
+class ModelEditor : View {
 
-    var workArea: Pane by singleAssign()
-    var selectedVertex: StackPane? = null
-    var selectedOffset: Point2D? = null
+    private var context: Context by singleAssign()
+    private var workArea: Pane by singleAssign()
+    private var selectedVertex: StackPane? = null
+    private var selectedOffset: Point2D? = null
+
+    constructor(title: String) : super(title) {
+        context = JsonContext()
+    }
+
+    constructor(cntxt: Context) : super() {
+        context = cntxt
+        for (vertex in context.model.vertices) {
+            vertices.add(createVertex(vertex))
+        }
+        for (edge in context.model.edges) {
+            workArea.add(createEdge(edge))
+        }
+        for (vertexFX in vertices) {
+            workArea.add(vertexFX)
+        }
+    }
 
     override val root = scrollpane {
         workArea = pane {
-
             style {
                 backgroundColor += Color.LIGHTYELLOW
-            }
-
-            fun createEdge(edge: Edge.RuntimeEdge): Line {
-                var edgeFx = EdgeFX(edge)
-                return edgeFx.getLine()
-            }
-
-            fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
-                var vertexFX = VertexFX(vertex)
-                vertexFX.rect.width = fontLoader.computeStringWidth(vertexFX.text.text, vertexFX.text.font).toDouble()
-                vertexFX.rect.height = fontLoader.getFontMetrics(vertexFX.text.font).lineHeight.toDouble()
-                vertices.add(vertexFX)
-                return vertexFX
-            }
-
-            fun readGraphWalkerModel(fileName: String): List<Context> {
-                val factory = JsonContextFactory()
-                return factory.create(Paths.get(fileName))
-            }
-
-            val contexts = readGraphWalkerModel("/home/krikar/dev/graphwalker/graphwalker-project/graphwalker-studio/src/test/resources/json/UC01.json")
-            for (context in contexts) {
-                for (vertex in context.model.vertices) {
-                    createVertex(vertex)
-                }
-                for (edge in context.model.edges) {
-                    add(createEdge(edge))
-                }
-            }
-            for (vertexFX in vertices) {
-                add(vertexFX)
             }
         }
 
@@ -122,6 +107,17 @@ class ModelEditor(title: String) : View(title) {
         addEventFilter(MouseEvent.MOUSE_RELEASED, ::stopDrag)
     }
 
+    private fun createEdge(edge: Edge.RuntimeEdge): Line {
+        val edgeFx = EdgeFX(edge)
+        return edgeFx.getLine()
+    }
+
+    private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
+        val vertexFX = VertexFX(vertex)
+        vertexFX.rect.width = fontLoader.computeStringWidth(vertexFX.text.text, vertexFX.text.font).toDouble()
+        vertexFX.rect.height = fontLoader.getFontMetrics(vertexFX.text.font).lineHeight.toDouble()
+        return vertexFX
+    }
 
     private fun startDrag(evt: MouseEvent) {
         vertices
