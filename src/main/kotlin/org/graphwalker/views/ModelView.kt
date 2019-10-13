@@ -1,7 +1,17 @@
 package org.graphwalker.views
 
+import com.kitfox.svg.SVGLoader
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
+import guru.nidi.graphviz.attribute.Arrow.DOT
+import guru.nidi.graphviz.attribute.LinkAttr
+import guru.nidi.graphviz.attribute.Rank
+import guru.nidi.graphviz.attribute.Shape
+import guru.nidi.graphviz.attribute.Style
+import guru.nidi.graphviz.engine.Format
+import guru.nidi.graphviz.engine.Graphviz
+import guru.nidi.graphviz.model.Factory.*
+import guru.nidi.graphviz.model.Graph
 import javafx.geometry.Point2D
 import javafx.scene.Group
 import javafx.scene.control.Label
@@ -10,10 +20,7 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
-import javafx.scene.shape.LineTo
-import javafx.scene.shape.MoveTo
-import javafx.scene.shape.Path
-import javafx.scene.shape.Rectangle
+import javafx.scene.shape.*
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
@@ -116,11 +123,49 @@ class ModelEditor : View {
             style {
                 backgroundColor += Color.LIGHTYELLOW
             }
+
+            contextmenu {
+                item("Autolayout").action {
+                    doAutoLayout()
+                }
+            }
         }
 
         addEventFilter(MouseEvent.MOUSE_PRESSED, ::startDrag)
         addEventFilter(MouseEvent.MOUSE_DRAGGED, ::drag)
         addEventFilter(MouseEvent.MOUSE_RELEASED, ::stopDrag)
+    }
+
+    private fun doAutoLayout() {
+        val init = node("init")
+        val execute = node("execute")
+        val compare = node("compare").with(Shape.RECTANGLE, Style.FILLED, guru.nidi.graphviz.attribute.Color.hsv(.7, .3, 1.0))
+        val make_string = node("make_string").with(guru.nidi.graphviz.attribute.Label.of("make a\nstring"))
+        val printf = node("printf")
+        val g = graph("ex2").directed()
+                .graphAttr().with(guru.nidi.graphviz.attribute.Color.rgb("222222").background())
+                .nodeAttr().with(guru.nidi.graphviz.attribute.Font.config("Arial", 14), guru.nidi.graphviz.attribute.Color.rgb("bbbbbb").fill(), Style.FILLED)
+                .with(
+                        node("main").with(Shape.RECTANGLE).link(
+                                to(node("parse").link(execute)).with(LinkAttr.weight(8.0)),
+                                to(init).with(Style.DOTTED),
+                                node("cleanup"),
+                                to(printf).with(Style.BOLD, guru.nidi.graphviz.attribute.Label.of("100 times"), guru.nidi.graphviz.attribute.Color.RED)),
+                        execute.link(graph().with(make_string, printf), to(compare).with(guru.nidi.graphviz.attribute.Color.RED)),
+                        init.link(make_string))
+
+        var g = mutGraph().setDirected(true)
+        for(v in context.model.vertices) {
+            g.add(mutNode(v.name))
+        }
+        for(e in context.model.edges) {
+            if (e.sourceVertex == null) {
+                g.add(mutNode(e.targetVertex.name).addLink(mutNode(e.targetVertex.name)).setName(e.name))
+            } else {
+                g.add(mutNode(e.sourceVertex.name).addLink(mutNode(e.targetVertex.name)).setName(e.name))
+            }
+        }
+        println(Graphviz.fromGraph(g).render(Format.DOT).toString())
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
