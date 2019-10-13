@@ -1,17 +1,16 @@
 package org.graphwalker.views
 
-import com.kitfox.svg.SVGLoader
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
-import guru.nidi.graphviz.attribute.Arrow.DOT
-import guru.nidi.graphviz.attribute.LinkAttr
+import guru.nidi.graphviz.*
+import guru.nidi.graphviz.attribute.Arrow
 import guru.nidi.graphviz.attribute.Rank
-import guru.nidi.graphviz.attribute.Shape
 import guru.nidi.graphviz.attribute.Style
 import guru.nidi.graphviz.engine.Format
 import guru.nidi.graphviz.engine.Graphviz
+import guru.nidi.graphviz.model.Compass
 import guru.nidi.graphviz.model.Factory.*
-import guru.nidi.graphviz.model.Graph
+import guru.nidi.graphviz.model.Link
 import javafx.geometry.Point2D
 import javafx.scene.Group
 import javafx.scene.control.Label
@@ -29,6 +28,7 @@ import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
 import tornadofx.*
+import java.io.File
 
 val vertices = mutableListOf<VertexFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
@@ -137,35 +137,15 @@ class ModelEditor : View {
     }
 
     private fun doAutoLayout() {
-        val init = node("init")
-        val execute = node("execute")
-        val compare = node("compare").with(Shape.RECTANGLE, Style.FILLED, guru.nidi.graphviz.attribute.Color.hsv(.7, .3, 1.0))
-        val make_string = node("make_string").with(guru.nidi.graphviz.attribute.Label.of("make a\nstring"))
-        val printf = node("printf")
-        val g = graph("ex2").directed()
-                .graphAttr().with(guru.nidi.graphviz.attribute.Color.rgb("222222").background())
-                .nodeAttr().with(guru.nidi.graphviz.attribute.Font.config("Arial", 14), guru.nidi.graphviz.attribute.Color.rgb("bbbbbb").fill(), Style.FILLED)
-                .with(
-                        node("main").with(Shape.RECTANGLE).link(
-                                to(node("parse").link(execute)).with(LinkAttr.weight(8.0)),
-                                to(init).with(Style.DOTTED),
-                                node("cleanup"),
-                                to(printf).with(Style.BOLD, guru.nidi.graphviz.attribute.Label.of("100 times"), guru.nidi.graphviz.attribute.Color.RED)),
-                        execute.link(graph().with(make_string, printf), to(compare).with(guru.nidi.graphviz.attribute.Color.RED)),
-                        init.link(make_string))
-
         var g = mutGraph().setDirected(true)
-        for(v in context.model.vertices) {
-            g.add(mutNode(v.name))
-        }
         for(e in context.model.edges) {
             if (e.sourceVertex == null) {
-                g.add(mutNode(e.targetVertex.name).addLink(mutNode(e.targetVertex.name)).setName(e.name))
+                g.add(node(e.targetVertex.name).link(node(e.targetVertex.name)).with(guru.nidi.graphviz.attribute.Label.of(e.name)))
             } else {
-                g.add(mutNode(e.sourceVertex.name).addLink(mutNode(e.targetVertex.name)).setName(e.name))
+                g.add(node(e.sourceVertex.name).link(node(e.targetVertex.name)).with(guru.nidi.graphviz.attribute.Label.of(e.name)))
             }
         }
-        println(Graphviz.fromGraph(g).render(Format.DOT).toString())
+        println(Graphviz.fromGraph(g).render(Format.SVG).toFile(File("ex1.svg")))
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
