@@ -3,6 +3,7 @@ package org.graphwalker.views
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
 import javafx.geometry.Point2D
+import javafx.scene.Group
 import javafx.scene.control.Label
 import javafx.scene.control.ScrollPane
 import javafx.scene.input.MouseEvent
@@ -49,10 +50,12 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     }
 }
 
-class EdgeFX(edge: Edge.RuntimeEdge) {
+class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
     private val element = edge
+    var line: Line by singleAssign()
+    var text: Label by singleAssign()
 
-    fun getLine(): Line {
+    init {
         val start: VertexFX
         val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
         start = if (element.sourceVertex != null) {
@@ -61,12 +64,19 @@ class EdgeFX(edge: Edge.RuntimeEdge) {
             end
         }
 
-        val line = Line()
-        line.startXProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
-        line.startYProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
-        line.endXProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
-        line.endYProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
-        return line
+        line = line {
+            startXProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
+            startYProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
+            endXProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
+            endYProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
+        }
+
+        text = label {
+            text = edge.name
+            font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+            layoutXProperty().bind(line.endXProperty().subtract(line.startXProperty()).divide(2.0).add(line.startXProperty()))
+            layoutYProperty().bind(line.endYProperty().subtract(line.startYProperty()).divide(2.0).add(line.startYProperty()))
+        }
     }
 }
 
@@ -88,7 +98,7 @@ class ModelEditor : View {
             vertices.add(createVertex(vertex))
         }
         for (edge in context.model.edges) {
-            workArea.add(createEdge(edge))
+            workArea.add(EdgeFX(edge))
         }
         for (vertexFX in vertices) {
             workArea.add(vertexFX)
@@ -105,11 +115,6 @@ class ModelEditor : View {
         addEventFilter(MouseEvent.MOUSE_PRESSED, ::startDrag)
         addEventFilter(MouseEvent.MOUSE_DRAGGED, ::drag)
         addEventFilter(MouseEvent.MOUSE_RELEASED, ::stopDrag)
-    }
-
-    private fun createEdge(edge: Edge.RuntimeEdge): Line {
-        val edgeFx = EdgeFX(edge)
-        return edgeFx.getLine()
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
