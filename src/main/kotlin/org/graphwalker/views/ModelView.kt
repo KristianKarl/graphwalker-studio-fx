@@ -139,14 +139,18 @@ class ModelEditor : View {
         val g = graph("GraphWalker", directed = true) {
             for (e in context.model.edges) {
                 if (e.sourceVertex == null) {
-                    (e.targetVertex.name - e.targetVertex.name)[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                 } else {
-                    (e.sourceVertex.name - e.targetVertex.name)[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                 }
             }
         }
         println(g.toGraphviz().render(Format.DOT).toString())
-        g.toGraphviz().render(Format.PNG).toFile(File("target/kt2.png"))
+        println(g.toGraphviz().render(Format.XDOT).toString())
+        println(g.toGraphviz().render(Format.JSON0).toString())
+        g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
