@@ -44,7 +44,7 @@
         </dependency>
         <dependency>
             <groupId>guru.nidi</groupId>
-            <artifactId>graphviz-java</artifactId>
+            <artifactId>graphviz-kotlin</artifactId>
             <version>${graphviz-java.version}</version>
         </dependency>
         <dependency>

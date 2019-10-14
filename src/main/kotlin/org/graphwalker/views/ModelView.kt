@@ -2,15 +2,11 @@ package org.graphwalker.views
 
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
-import guru.nidi.graphviz.*
-import guru.nidi.graphviz.attribute.Arrow
-import guru.nidi.graphviz.attribute.Rank
-import guru.nidi.graphviz.attribute.Style
 import guru.nidi.graphviz.engine.Format
-import guru.nidi.graphviz.engine.Graphviz
-import guru.nidi.graphviz.model.Compass
-import guru.nidi.graphviz.model.Factory.*
-import guru.nidi.graphviz.model.Link
+import guru.nidi.graphviz.get
+import guru.nidi.graphviz.graph
+import guru.nidi.graphviz.minus
+import guru.nidi.graphviz.toGraphviz
 import javafx.geometry.Point2D
 import javafx.scene.Group
 import javafx.scene.control.Label
@@ -19,7 +15,10 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
-import javafx.scene.shape.*
+import javafx.scene.shape.LineTo
+import javafx.scene.shape.MoveTo
+import javafx.scene.shape.Path
+import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
@@ -137,15 +136,17 @@ class ModelEditor : View {
     }
 
     private fun doAutoLayout() {
-        var g = mutGraph().setDirected(true)
-        for(e in context.model.edges) {
-            if (e.sourceVertex == null) {
-                g.add(node(e.targetVertex.name).link(node(e.targetVertex.name)).with(guru.nidi.graphviz.attribute.Label.of(e.name)))
-            } else {
-                g.add(node(e.sourceVertex.name).link(node(e.targetVertex.name)).with(guru.nidi.graphviz.attribute.Label.of(e.name)))
+        val g = graph("GraphWalker", directed = true) {
+            for (e in context.model.edges) {
+                if (e.sourceVertex == null) {
+                    (e.targetVertex.name - e.targetVertex.name)[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                } else {
+                    (e.sourceVertex.name - e.targetVertex.name)[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                }
             }
         }
-        println(Graphviz.fromGraph(g).render(Format.SVG).toFile(File("ex1.svg")))
+        println(g.toGraphviz().render(Format.DOT).toString())
+        g.toGraphviz().render(Format.PNG).toFile(File("target/kt2.png"))
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
