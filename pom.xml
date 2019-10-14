@@ -14,6 +14,7 @@
         <graphwalker.version>4.0.1</graphwalker.version>
         <graphviz-java.version>0.11.0</graphviz-java.version>
         <logback.version>1.2.3</logback.version>
+        <json.version>20190722</json.version>
     </properties>
 
     <dependencies>
@@ -46,6 +47,11 @@
             <groupId>guru.nidi</groupId>
             <artifactId>graphviz-kotlin</artifactId>
             <version>${graphviz-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>${json.version}</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>

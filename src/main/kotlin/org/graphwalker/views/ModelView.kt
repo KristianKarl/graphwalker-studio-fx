@@ -26,10 +26,12 @@ import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
+import org.json.JSONObject
 import tornadofx.*
 import java.io.File
 
 val vertices = mutableListOf<VertexFX>()
+val edges = mutableListOf<EdgeFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
 
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
@@ -110,7 +112,9 @@ class ModelEditor : View {
             vertices.add(createVertex(vertex))
         }
         for (edge in context.model.edges) {
-            workArea.add(EdgeFX(edge))
+            val edgeFX = EdgeFX(edge)
+            edges.add(edgeFX)
+            workArea.add(edgeFX)
         }
         for (vertexFX in vertices) {
             workArea.add(vertexFX)
@@ -147,10 +151,19 @@ class ModelEditor : View {
                 }
             }
         }
-        println(g.toGraphviz().render(Format.DOT).toString())
-        println(g.toGraphviz().render(Format.XDOT).toString())
         println(g.toGraphviz().render(Format.JSON0).toString())
         g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
+
+        val obj = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
+        val arr = obj.getJSONArray("objects")
+        for (node in arr) {
+            var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
+            println(vertexFX.text)
+
+            val pos = node.getString("pos").split(",")
+            vertexFX.layoutX = pos[0].toDouble()
+            vertexFX.layoutY = pos[1].toDouble()
+        }
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
@@ -196,4 +209,10 @@ class ModelEditor : View {
         selectedVertex = null
         selectedOffset = null
     }
+}
+
+private fun Any.getString(s: String): String {
+    if (this is JSONObject)
+        return this.getString(s)
+    return ""
 }
