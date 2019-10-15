@@ -7,6 +7,9 @@ import guru.nidi.graphviz.get
 import guru.nidi.graphviz.graph
 import guru.nidi.graphviz.minus
 import guru.nidi.graphviz.toGraphviz
+import javafx.animation.KeyFrame
+import javafx.animation.KeyValue
+import javafx.animation.Timeline
 import javafx.geometry.Point2D
 import javafx.scene.Group
 import javafx.scene.control.Label
@@ -22,6 +25,7 @@ import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
+import javafx.util.Duration
 import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
@@ -154,6 +158,7 @@ class ModelEditor : View {
         println(g.toGraphviz().render(Format.JSON0).toString())
         g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
 
+        var timeline = Timeline()
         val obj = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
         val arr = obj.getJSONArray("objects")
         for (node in arr) {
@@ -161,9 +166,14 @@ class ModelEditor : View {
             println(vertexFX.text)
 
             val pos = node.getString("pos").split(",")
-            vertexFX.layoutX = pos[0].toDouble()
-            vertexFX.layoutY = pos[1].toDouble()
+
+            val xValue = KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble())
+            val yValue = KeyValue(vertexFX.layoutYProperty(), pos[1].toDouble())
+
+            val keyFrame = KeyFrame(Duration.millis(250.0), xValue, yValue)
+            timeline.keyFrames.add(keyFrame)
         }
+        timeline.play()
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
