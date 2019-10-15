@@ -2,11 +2,8 @@ package org.graphwalker.views
 
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
+import guru.nidi.graphviz.*
 import guru.nidi.graphviz.engine.Format
-import guru.nidi.graphviz.get
-import guru.nidi.graphviz.graph
-import guru.nidi.graphviz.minus
-import guru.nidi.graphviz.toGraphviz
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
@@ -18,10 +15,7 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
-import javafx.scene.shape.LineTo
-import javafx.scene.shape.MoveTo
-import javafx.scene.shape.Path
-import javafx.scene.shape.Rectangle
+import javafx.scene.shape.*
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
@@ -34,6 +28,7 @@ import org.json.JSONObject
 import tornadofx.*
 import java.io.File
 
+val DPI = 72
 val vertices = mutableListOf<VertexFX>()
 val edges = mutableListOf<EdgeFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
@@ -54,7 +49,7 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
 
         text = label {
             text = vertex.name
-            font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+            font = Font.font("courier", 16.0)
         }
 
         if (element.hasProperty("x") && element.hasProperty("y")) {
@@ -86,12 +81,12 @@ class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
         endElement.xProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
         endElement.yProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
 
-        //path.elements.addAll(startElement, endElement)
+        path.elements.addAll(startElement, endElement)
         add(path)
 
         text = label {
             text = edge.name
-            font = Font.font("Consolas", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+            font = Font.font("courier", FontWeight.THIN, FontPosture.REGULAR, 16.0)
             layoutXProperty().bind(endElement.xProperty().subtract(startElement.xProperty()).divide(2.0).add(startElement.xProperty()))
             layoutYProperty().bind(endElement.yProperty().subtract(startElement.yProperty()).divide(2.0).add(startElement.yProperty()))
         }
@@ -145,6 +140,9 @@ class ModelEditor : View {
 
     private fun doAutoLayout() {
         val g = graph("GraphWalker", directed = true) {
+            graph[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
+            node[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16), guru.nidi.graphviz.attribute.Shape.RECTANGLE]
+            edge[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
             for (e in context.model.edges) {
                 if (e.sourceVertex == null) {
                     (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
@@ -163,15 +161,16 @@ class ModelEditor : View {
         var arr = obj.getJSONArray("objects")
         for (node in arr) {
             var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
-            println(vertexFX.text)
 
+            // The new rectangle size
+            vertexFX.rect.height = node.getString("height").toDouble() * DPI
+            vertexFX.rect.width = node.getString("width").toDouble() * DPI
+
+            // The new position
             val pos = node.getString("pos").split(",")
-
-            val xValue = KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble())
-            val yValue = KeyValue(vertexFX.layoutYProperty(), pos[1].toDouble())
-
-            val keyFrame = KeyFrame(Duration.millis(250.0), xValue, yValue)
-            timeline.keyFrames.add(keyFrame)
+            timeline.keyFrames.add(KeyFrame(Duration.millis(250.0),
+                    KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble() - vertexFX.rect.width / 2.0),
+                    KeyValue(vertexFX.layoutYProperty(), workArea.height - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
         }
 
 
@@ -180,16 +179,28 @@ class ModelEditor : View {
             var edgeFX = edges.filter { it.element.name == edge.getString("label") }[0]
             println(edgeFX.text)
             var labelPos = edge.getString("lp").split(",")
-            //edgeFX.text.translateX= labelPos[0].toDouble()
-            //edgeFX.text.translateY = labelPos[1].toDouble()
+
+
+            edgeFX.text.layoutXProperty().unbind()
+            edgeFX.text.layoutYProperty().unbind()
+            edgeFX.text.layoutX = labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0
+            edgeFX.text.layoutY = workArea.height - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
 
             // "e,305.99,532.4 305.99,547.6 320.67,546.8 331.24,544.27 331.24,540 331.24,536.8 325.29,534.58 316.13,533.33"
+            var curve = CubicCurve()
+            curve.startX = edgeFX.startElement.x
+            curve.startY = edgeFX.startElement.y
+
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
             for (pair in pairs) {
                 val pos = pair.split(",")
-                //edgeFX.path.elements.add(LineTo(pos[0].toDouble(), pos[1].toDouble()))
+                curve.
             }
+            curve.endX = edgeFX.endElement.x
+            curve.endY = edgeFX.endElement.y
+
+            edgeFX.path.elements.add()
         }
 
         timeline.play()
