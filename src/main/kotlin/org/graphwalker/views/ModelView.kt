@@ -65,7 +65,7 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
 }
 
 class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
-    private val element = edge
+    val element = edge
     var path = Path()
     var text = Label()
     var startElement = MoveTo()
@@ -86,7 +86,7 @@ class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
         endElement.xProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
         endElement.yProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
 
-        path.elements.addAll(startElement, endElement)
+        //path.elements.addAll(startElement, endElement)
         add(path)
 
         text = label {
@@ -160,7 +160,7 @@ class ModelEditor : View {
 
         var timeline = Timeline()
         val obj = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
-        val arr = obj.getJSONArray("objects")
+        var arr = obj.getJSONArray("objects")
         for (node in arr) {
             var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
             println(vertexFX.text)
@@ -173,6 +173,25 @@ class ModelEditor : View {
             val keyFrame = KeyFrame(Duration.millis(250.0), xValue, yValue)
             timeline.keyFrames.add(keyFrame)
         }
+
+
+        arr = obj.getJSONArray("edges")
+        for (edge in arr) {
+            var edgeFX = edges.filter { it.element.name == edge.getString("label") }[0]
+            println(edgeFX.text)
+            var labelPos = edge.getString("lp").split(",")
+            //edgeFX.text.translateX= labelPos[0].toDouble()
+            //edgeFX.text.translateY = labelPos[1].toDouble()
+
+            // "e,305.99,532.4 305.99,547.6 320.67,546.8 331.24,544.27 331.24,540 331.24,536.8 325.29,534.58 316.13,533.33"
+            var str = edge.getString("pos").replace("e,", "")
+            val pairs = str.split(" ")
+            for (pair in pairs) {
+                val pos = pair.split(",")
+                //edgeFX.path.elements.add(LineTo(pos[0].toDouble(), pos[1].toDouble()))
+            }
+        }
+
         timeline.play()
     }
 
