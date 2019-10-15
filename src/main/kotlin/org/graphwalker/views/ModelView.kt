@@ -15,7 +15,9 @@ import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
-import javafx.scene.shape.*
+import javafx.scene.shape.MoveTo
+import javafx.scene.shape.Path
+import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
@@ -38,6 +40,7 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
     var text: Label by singleAssign()
     var rect: Rectangle by singleAssign()
+    var gvid: String by singleAssign()
 
     init {
         rect = rectangle {
@@ -161,7 +164,13 @@ class ModelEditor : View {
         val obj = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
         var arr = obj.getJSONArray("objects")
         for (node in arr) {
+            println(node)
             var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
+
+            // Get the graphviz id, it's needed to uniquely identify edges later on
+            if (node is JSONObject) {
+                vertexFX.gvid = node.get("_gvid").toString()
+            }
 
             // The new rectangle size
             vertexFX.rect.height = node.getString("height").toDouble() * DPI
@@ -177,23 +186,54 @@ class ModelEditor : View {
 
         arr = obj.getJSONArray("edges")
         for (edge in arr) {
-            var edgeFX = edges.filter { it.element.name == edge.getString("label") }[0]
+            println(edge)
+            var source_gvid : String by singleAssign()
+            var target_gvid : String by singleAssign()
+            if (edge is JSONObject) {
+                source_gvid = edge.get("tail").toString()
+                target_gvid = edge.get("head").toString()
+            }
+
+            val sourceFX = vertices.filter { it.gvid == source_gvid }[0]
+            val targetFX = vertices.filter { it.gvid == target_gvid }[0]
+
+            var edgeFX : EdgeFX by singleAssign()
+            for (e in edges) {
+                if(e.element.name == edge.getString("label")) {
+                    if (e.element.sourceVertex !=  null ){
+                        if (e.element.sourceVertex.id == sourceFX.element.id){
+                            if (e.element.targetVertex.id == targetFX.element.id){
+                                edgeFX = e
+                                break
+                            }
+                        }
+                    } else if(e.element.targetVertex.id == targetFX.element.id) {
+                        edgeFX = e
+                        break
+                    }
+                }
+            }
             println(edgeFX.text)
+
             var labelPos = edge.getString("lp").split(",")
-
-
             edgeFX.text.layoutXProperty().unbind()
             edgeFX.text.layoutYProperty().unbind()
             edgeFX.text.layoutX = labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0
             edgeFX.text.layoutY = workArea.height - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
 
             // "e,305.99,532.4 305.99,547.6 320.67,546.8 331.24,544.27 331.24,540 331.24,536.8 325.29,534.58 316.13,533.33"
-
+            edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
+            var doMoveTo = true
             for (pair in pairs) {
                 val pos = pair.split(",")
-                edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
+                if (doMoveTo) {
+                    doMoveTo =false
+                    edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
+                } else {
+                    edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
+                }
             }
 
         }
