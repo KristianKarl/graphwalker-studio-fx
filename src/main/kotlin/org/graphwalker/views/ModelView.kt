@@ -27,6 +27,7 @@ import org.graphwalker.io.factory.json.JsonContext
 import org.json.JSONObject
 import tornadofx.*
 import java.io.File
+import javafx.scene.shape.LineTo as LineTo1
 
 val DPI = 72
 val vertices = mutableListOf<VertexFX>()
@@ -64,7 +65,7 @@ class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
     var path = Path()
     var text = Label()
     var startElement = MoveTo()
-    var endElement = LineTo()
+    var endElement = LineTo1()
 
     init {
         val start: VertexFX
@@ -187,20 +188,14 @@ class ModelEditor : View {
             edgeFX.text.layoutY = workArea.height - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
 
             // "e,305.99,532.4 305.99,547.6 320.67,546.8 331.24,544.27 331.24,540 331.24,536.8 325.29,534.58 316.13,533.33"
-            var curve = CubicCurve()
-            curve.startX = edgeFX.startElement.x
-            curve.startY = edgeFX.startElement.y
 
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
             for (pair in pairs) {
                 val pos = pair.split(",")
-                curve.
+                edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
             }
-            curve.endX = edgeFX.endElement.x
-            curve.endY = edgeFX.endElement.y
 
-            edgeFX.path.elements.add()
         }
 
         timeline.play()
