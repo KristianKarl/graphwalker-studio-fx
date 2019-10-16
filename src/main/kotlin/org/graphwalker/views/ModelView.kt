@@ -27,22 +27,24 @@ import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
 import org.json.JSONObject
+import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
 import javafx.scene.shape.LineTo as LineTo1
 
-val DPI = 72
 val vertices = mutableListOf<VertexFX>()
 val edges = mutableListOf<EdgeFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
 
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
-    var text: Label by singleAssign()
-    var rect: Rectangle by singleAssign()
-    var gvid: String by singleAssign()
+    var text: Label
+    var rect: Rectangle
+    var gvid: String
 
     init {
+        gvid = ""
+
         rect = rectangle {
             fill = Color.LIGHTBLUE
             height = 20.0
@@ -99,6 +101,7 @@ class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
 
 
 class ModelEditor : View {
+    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private var context: Context by singleAssign()
     private var workArea: Pane by singleAssign()
@@ -157,14 +160,17 @@ class ModelEditor : View {
                 }
             }
         }
-        println(g.toGraphviz().render(Format.JSON0).toString())
+        logger.debug(g.toGraphviz().render(Format.JSON0).toString())
         g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
 
         var timeline = Timeline()
-        val obj = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
-        var arr = obj.getJSONArray("objects")
+        val graphJSONObject = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
+        val dpi = graphJSONObject.getString("dpi").toInt()
+        val area = graphJSONObject.getString("bb")
+
+        var arr = graphJSONObject.getJSONArray("objects")
         for (node in arr) {
-            println(node)
+            logger.debug(node.toString())
             var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
 
             // Get the graphviz id, it's needed to uniquely identify edges later on
@@ -173,8 +179,8 @@ class ModelEditor : View {
             }
 
             // The new rectangle size
-            vertexFX.rect.height = node.getString("height").toDouble() * DPI
-            vertexFX.rect.width = node.getString("width").toDouble() * DPI
+            vertexFX.rect.height = node.getString("height").toDouble() * dpi
+            vertexFX.rect.width = node.getString("width").toDouble() * dpi
 
             // The new position
             val pos = node.getString("pos").split(",")
@@ -184,14 +190,16 @@ class ModelEditor : View {
         }
 
 
-        arr = obj.getJSONArray("edges")
+        arr = graphJSONObject.getJSONArray("edges")
         for (edge in arr) {
-            println(edge)
+            logger.debug(edge.toString())
             var source_gvid: String by singleAssign()
             var target_gvid: String by singleAssign()
             if (edge is JSONObject) {
                 source_gvid = edge.get("tail").toString()
+                logger.debug(source_gvid)
                 target_gvid = edge.get("head").toString()
+                logger.debug(target_gvid)
             }
 
             val sourceFX = vertices.filter { it.gvid == source_gvid }[0]
@@ -213,7 +221,7 @@ class ModelEditor : View {
                     }
                 }
             }
-            println(edgeFX.text)
+            logger.debug(edgeFX.text.toString())
 
             var labelPos = edge.getString("lp").split(",")
             edgeFX.text.layoutXProperty().unbind()
@@ -237,7 +245,7 @@ class ModelEditor : View {
                 } else {
                     edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
                 }
-                println(edgeFX.path.elements)
+                logger.debug(edgeFX.path.elements.toString())
             }
 
         }
