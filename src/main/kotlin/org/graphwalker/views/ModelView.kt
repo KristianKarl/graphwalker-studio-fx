@@ -187,8 +187,8 @@ class ModelEditor : View {
         arr = obj.getJSONArray("edges")
         for (edge in arr) {
             println(edge)
-            var source_gvid : String by singleAssign()
-            var target_gvid : String by singleAssign()
+            var source_gvid: String by singleAssign()
+            var target_gvid: String by singleAssign()
             if (edge is JSONObject) {
                 source_gvid = edge.get("tail").toString()
                 target_gvid = edge.get("head").toString()
@@ -197,17 +197,17 @@ class ModelEditor : View {
             val sourceFX = vertices.filter { it.gvid == source_gvid }[0]
             val targetFX = vertices.filter { it.gvid == target_gvid }[0]
 
-            var edgeFX : EdgeFX by singleAssign()
+            var edgeFX: EdgeFX by singleAssign()
             for (e in edges) {
-                if(e.element.name == edge.getString("label")) {
-                    if (e.element.sourceVertex !=  null ){
-                        if (e.element.sourceVertex.id == sourceFX.element.id){
-                            if (e.element.targetVertex.id == targetFX.element.id){
+                if (e.element.name == edge.getString("label")) {
+                    if (e.element.sourceVertex != null) {
+                        if (e.element.sourceVertex.id == sourceFX.element.id) {
+                            if (e.element.targetVertex.id == targetFX.element.id) {
                                 edgeFX = e
                                 break
                             }
                         }
-                    } else if(e.element.targetVertex.id == targetFX.element.id) {
+                    } else if (e.element.targetVertex.id == targetFX.element.id) {
                         edgeFX = e
                         break
                     }
@@ -225,15 +225,19 @@ class ModelEditor : View {
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
-            var doMoveTo = true
+            var doMoveTo = 0
             for (pair in pairs) {
+                doMoveTo++
+                if (doMoveTo == 1) {
+                    continue
+                }
                 val pos = pair.split(",")
-                if (doMoveTo) {
-                    doMoveTo =false
+                if (doMoveTo == 2) {
                     edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
                 } else {
                     edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
                 }
+                println(edgeFX.path.elements)
             }
 
         }
