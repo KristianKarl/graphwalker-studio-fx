@@ -160,13 +160,18 @@ class ModelEditor : View {
                 }
             }
         }
+        logger.debug(g.toGraphviz().render(Format.DOT).toString())
         logger.debug(g.toGraphviz().render(Format.JSON0).toString())
         g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
 
         var timeline = Timeline()
         val graphJSONObject = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
-        val dpi = graphJSONObject.getString("dpi").toInt()
-        val area = graphJSONObject.getString("bb")
+        var dpi = graphJSONObject.getString("dpi").toInt()
+        dpi = 72
+        val boundingBox = graphJSONObject.getString("bb").split(",")
+        logger.debug(workArea.toString())
+        var r = workArea.setPrefSize(boundingBox[2].toDouble(), boundingBox[3].toDouble())
+        logger.debug(r.toString())
 
         var arr = graphJSONObject.getJSONArray("objects")
         for (node in arr) {
@@ -186,7 +191,7 @@ class ModelEditor : View {
             val pos = node.getString("pos").split(",")
             timeline.keyFrames.add(KeyFrame(Duration.millis(250.0),
                     KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble() - vertexFX.rect.width / 2.0),
-                    KeyValue(vertexFX.layoutYProperty(), workArea.height - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
+                    KeyValue(vertexFX.layoutYProperty(), boundingBox[3].toDouble() - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
         }
 
 
@@ -197,9 +202,7 @@ class ModelEditor : View {
             var target_gvid: String by singleAssign()
             if (edge is JSONObject) {
                 source_gvid = edge.get("tail").toString()
-                logger.debug(source_gvid)
                 target_gvid = edge.get("head").toString()
-                logger.debug(target_gvid)
             }
 
             val sourceFX = vertices.filter { it.gvid == source_gvid }[0]
@@ -227,9 +230,8 @@ class ModelEditor : View {
             edgeFX.text.layoutXProperty().unbind()
             edgeFX.text.layoutYProperty().unbind()
             edgeFX.text.layoutX = labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0
-            edgeFX.text.layoutY = workArea.height - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
+            edgeFX.text.layoutY = boundingBox[3].toDouble() - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
 
-            // "e,305.99,532.4 305.99,547.6 320.67,546.8 331.24,544.27 331.24,540 331.24,536.8 325.29,534.58 316.13,533.33"
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
@@ -241,12 +243,12 @@ class ModelEditor : View {
                 }
                 val pos = pair.split(",")
                 if (doMoveTo == 2) {
-                    edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
+                    edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
                 } else {
-                    edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), workArea.height - pos[1].toDouble()))
+                    edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
                 }
-                logger.debug(edgeFX.path.elements.toString())
             }
+            logger.debug(edgeFX.path.elements.toString())
 
         }
 
