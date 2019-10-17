@@ -4,6 +4,7 @@ import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
 import guru.nidi.graphviz.*
 import guru.nidi.graphviz.engine.Format
+import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
@@ -107,6 +108,9 @@ class ModelEditor : View {
     private var workArea: Pane by singleAssign()
     private var selectedVertex: StackPane? = null
     private var selectedOffset: Point2D? = null
+
+    private val PLOT_SIZE = 500
+    private val N_SEGS = PLOT_SIZE / 10
 
     constructor(title: String) : super(title) {
         context = JsonContext()
@@ -235,20 +239,20 @@ class ModelEditor : View {
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
-            var doMoveTo = 0
+            var listOfX = mutableListOf<Double>()
+            var listOfY = mutableListOf<Double>()
+
             for (pair in pairs) {
-                doMoveTo++
-                if (doMoveTo == 1) {
-                    continue
-                }
                 val pos = pair.split(",")
-                if (doMoveTo == 2) {
-                    edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
-                } else {
-                    edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
-                }
+                listOfX.add(pos[0].toDouble())
+                listOfY.add(pos[1].toDouble())
             }
-            logger.debug(edgeFX.path.elements.toString())
+            sort points in increasing x order
+            val pathInterpolator = BestFitSplineInterpolator(
+                listOfX.toDoubleArray(),
+                listOfY.toDoubleArray()
+            )
+            plotSpline(edgeFX.path, pathInterpolator, true)
 
         }
 
@@ -298,6 +302,23 @@ class ModelEditor : View {
         selectedVertex = null
         selectedOffset = null
     }
+
+    // plots an interpolated curve in segments along a path
+    // if invert is true then y=0 will be in the bottom left, otherwise it is in the top right
+    private fun plotSpline(path: Path, pathInterpolator: Interpolator, invert: Boolean) {
+        val y0 = pathInterpolator.interpolate(0, PLOT_SIZE, 0.0).toDouble()
+        path.elements.addAll(
+                MoveTo(0.0, if (invert) PLOT_SIZE - y0 else y0)
+        )
+
+        for (i in 0 until N_SEGS) {
+            val frac = (i + 1.0) / N_SEGS
+            val x = frac * PLOT_SIZE
+            val y = pathInterpolator.interpolate(0, PLOT_SIZE, frac).toDouble()
+            path.elements.add(javafx.scene.shape.LineTo(x, if (invert) PLOT_SIZE - y else y))
+        }
+    }
+
 }
 
 private fun Any.getString(s: String): String {
