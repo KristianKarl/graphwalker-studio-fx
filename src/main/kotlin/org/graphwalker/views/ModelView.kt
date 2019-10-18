@@ -23,6 +23,7 @@ import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
 import org.graphwalker.model.EdgeFX
 import org.graphwalker.model.VertexFX
+import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import tornadofx.*
@@ -84,8 +85,8 @@ class ModelEditor : View {
 
     private fun doAutoLayout() {
         val g = getGraphVizDot()
-
         var timeline = Timeline()
+
         val graphJSONObject = JSONObject(g?.toGraphviz()?.render(Format.JSON0).toString())
         var dpi = graphJSONObject.getString("dpi").toInt()
         dpi = 72
@@ -94,29 +95,14 @@ class ModelEditor : View {
         var r = workArea.setPrefSize(boundingBox[2].toDouble(), boundingBox[3].toDouble())
         logger.debug(r.toString())
 
-        var arr = graphJSONObject.getJSONArray("objects")
-        for (node in arr) {
-            logger.debug(node.toString())
-            var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
+        layoutVertices(graphJSONObject, dpi, timeline, boundingBox)
+        layoutEdges(graphJSONObject, timeline, boundingBox)
 
-            // Get the graphviz id, it's needed to uniquely identify edges later on
-            if (node is JSONObject) {
-                vertexFX.gvid = node.get("_gvid").toString()
-            }
+        timeline.play()
+    }
 
-            // The new rectangle size
-            vertexFX.rect.height = node.getString("height").toDouble() * dpi
-            vertexFX.rect.width = node.getString("width").toDouble() * dpi
-
-            // The new position
-            val pos = node.getString("pos").split(",")
-            timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
-                    KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble() - vertexFX.rect.width / 2.0),
-                    KeyValue(vertexFX.layoutYProperty(), boundingBox[3].toDouble() - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
-        }
-
-
-        arr = graphJSONObject.getJSONArray("edges")
+    private fun layoutEdges(graphJSONObject: JSONObject, timeline: Timeline, boundingBox: List<String>) {
+        var arr = graphJSONObject.getJSONArray("edges")
         for (edge in arr) {
             logger.debug(edge.toString())
             var source_gvid: String by singleAssign()
@@ -172,8 +158,29 @@ class ModelEditor : View {
             }
             logger.debug(edgeFX.path.elements.toString())
         }
+    }
 
-        timeline.play()
+    private fun layoutVertices(graphJSONObject: JSONObject, dpi: Int, timeline: Timeline, boundingBox: List<String>) {
+        var arr = graphJSONObject.getJSONArray("objects")
+        for (node in arr) {
+            logger.debug(node.toString())
+            var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
+
+            // Get the graphviz id, it's needed to uniquely identify edges later on
+            if (node is JSONObject) {
+                vertexFX.gvid = node.get("_gvid").toString()
+            }
+
+            // The new rectangle size
+            vertexFX.rect.height = node.getString("height").toDouble() * dpi
+            vertexFX.rect.width = node.getString("width").toDouble() * dpi
+
+            // The new position
+            val pos = node.getString("pos").split(",")
+            timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
+                    KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble() - vertexFX.rect.width / 2.0),
+                    KeyValue(vertexFX.layoutYProperty(), boundingBox[3].toDouble() - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
+        }
     }
 
     private fun getGraphVizDot(): MutableGraph? {
