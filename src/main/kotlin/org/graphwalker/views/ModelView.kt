@@ -5,7 +5,6 @@ import com.sun.javafx.tk.Toolkit
 import guru.nidi.graphviz.*
 import guru.nidi.graphviz.attribute.GraphAttr
 import guru.nidi.graphviz.engine.Format
-import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
