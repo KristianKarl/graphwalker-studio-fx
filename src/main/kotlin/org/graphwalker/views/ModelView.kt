@@ -152,9 +152,14 @@ class ModelEditor : View {
 
     private fun doAutoLayout() {
         val g = graph("GraphWalker", directed = true) {
-            graph[guru.nidi.graphviz.attribute.GraphAttr.splines(GraphAttr.SplineMode.SPLINE), guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
-            node[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16), guru.nidi.graphviz.attribute.Shape.RECTANGLE]
-            edge[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
+            graph[guru.nidi.graphviz.attribute.GraphAttr.splines(GraphAttr.SplineMode.SPLINE),
+                    guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16)]
+            node[guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16),
+                    guru.nidi.graphviz.attribute.Shape.RECTANGLE]
+            edge[guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16)]
             for (e in context.model.edges) {
                 if (e.sourceVertex == null) {
                     (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
