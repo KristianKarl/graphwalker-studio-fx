@@ -241,13 +241,18 @@ class ModelEditor : View {
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
             val pairs = str.split(" ")
-            var listOfX = mutableListOf<Double>()
-            var listOfY = mutableListOf<Double>()
-
+            var doMoveTo = 0
             for (pair in pairs) {
+                doMoveTo++
+                if (doMoveTo == 1) {
+                    continue
+                }
                 val pos = pair.split(",")
-                listOfX.add(pos[0].toDouble())
-                listOfY.add(pos[1].toDouble())
+                if (doMoveTo == 2) {
+                    edgeFX.path.elements.add(MoveTo(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
+                } else {
+                    edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
+                }
             }
             logger.debug(edgeFX.path.elements.toString())
         }
