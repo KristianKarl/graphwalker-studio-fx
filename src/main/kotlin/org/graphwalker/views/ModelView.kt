@@ -30,12 +30,13 @@ import tornadofx.*
 import java.io.File
 import javafx.scene.shape.LineTo as LineTo1
 
-val vertices = mutableListOf<VertexFX>()
-val edges = mutableListOf<EdgeFX>()
-var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
-val ANIMATION_DURATION = 250.0
 
 class ModelEditor : View {
+    val vertices = mutableListOf<VertexFX>()
+    val edges = mutableListOf<EdgeFX>()
+    var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
+    val ANIMATION_DURATION = 250.0
+
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private var context: Context by singleAssign()
@@ -56,7 +57,7 @@ class ModelEditor : View {
             vertices.add(createVertex(vertex))
         }
         for (edge in context.model.edges) {
-            val edgeFX = EdgeFX(edge)
+            val edgeFX = EdgeFX(edge, vertices)
             edges.add(edgeFX)
             workArea.add(edgeFX)
         }

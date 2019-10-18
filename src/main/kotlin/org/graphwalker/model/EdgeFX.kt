@@ -9,10 +9,9 @@ import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
 import org.graphwalker.core.model.Edge
-import org.graphwalker.views.vertices
 import tornadofx.*
 
-class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
+class EdgeFX(edge: Edge.RuntimeEdge, vertices: List<VertexFX>) : Group() {
     var element = edge
     var path = Path()
     var text = Label()

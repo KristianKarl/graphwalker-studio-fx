@@ -33,6 +33,9 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
         if (element.hasProperty("x") && element.hasProperty("y")) {
             layoutX = element.getProperty("x").toString().toDouble()
             layoutY = element.getProperty("y").toString().toDouble()
+        } else {
+            layoutX = 0.0
+            layoutY = 0.0
         }
     }
 }
