@@ -23,7 +23,6 @@ import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
 import org.graphwalker.model.EdgeFX
 import org.graphwalker.model.VertexFX
-import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import tornadofx.*
@@ -105,6 +104,7 @@ class ModelEditor : View {
     private fun layoutEdges(graphJSONObject: JSONObject, timeline: Timeline, boundingBox: List<String>) {
         var arr = graphJSONObject.getJSONArray("edges")
         for (edge in arr) {
+            edge as JSONObject
             logger.debug(edge.toString())
             var source_gvid: String by singleAssign()
             var target_gvid: String by singleAssign()
@@ -118,7 +118,7 @@ class ModelEditor : View {
 
             var edgeFX: EdgeFX by singleAssign()
             for (e in edges) {
-                if (e.element.name == edge.getString("label")) {
+                if (edge.has("label") && e.element.name == edge.getString("label")) {
                     if (e.element.sourceVertex != null) {
                         if (e.element.sourceVertex.id == sourceFX.element.id) {
                             if (e.element.targetVertex.id == targetFX.element.id) {
@@ -196,11 +196,21 @@ class ModelEditor : View {
                     guru.nidi.graphviz.attribute.Font.size(16)]
             for (e in context.model.edges) {
                 if (e.sourceVertex == null) {
-                    (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
-                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    if (e.name != null) {
+                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    } else {
+                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    }
                 } else {
-                    (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
-                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    if (e.sourceVertex == null) {
+                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    } else {
+                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    }
                 }
             }
         }
