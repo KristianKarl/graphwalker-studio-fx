@@ -3,6 +3,7 @@ package org.graphwalker.views
 import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
 import guru.nidi.graphviz.*
+import guru.nidi.graphviz.attribute.GraphAttr
 import guru.nidi.graphviz.engine.Format
 import javafx.animation.Interpolator
 import javafx.animation.KeyFrame
@@ -36,6 +37,7 @@ import javafx.scene.shape.LineTo as LineTo1
 val vertices = mutableListOf<VertexFX>()
 val edges = mutableListOf<EdgeFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
+val ANIMATION_DURATION = 250.0
 
 class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
@@ -151,7 +153,7 @@ class ModelEditor : View {
 
     private fun doAutoLayout() {
         val g = graph("GraphWalker", directed = true) {
-            graph[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
+            graph[guru.nidi.graphviz.attribute.GraphAttr.splines(GraphAttr.SplineMode.SPLINE), guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
             node[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16), guru.nidi.graphviz.attribute.Shape.RECTANGLE]
             edge[guru.nidi.graphviz.attribute.Font.name("courier"), guru.nidi.graphviz.attribute.Font.size(16)]
             for (e in context.model.edges) {
@@ -193,7 +195,7 @@ class ModelEditor : View {
 
             // The new position
             val pos = node.getString("pos").split(",")
-            timeline.keyFrames.add(KeyFrame(Duration.millis(250.0),
+            timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
                     KeyValue(vertexFX.layoutXProperty(), pos[0].toDouble() - vertexFX.rect.width / 2.0),
                     KeyValue(vertexFX.layoutYProperty(), boundingBox[3].toDouble() - pos[1].toDouble() - vertexFX.rect.height / 2.0)))
         }
@@ -233,8 +235,9 @@ class ModelEditor : View {
             var labelPos = edge.getString("lp").split(",")
             edgeFX.text.layoutXProperty().unbind()
             edgeFX.text.layoutYProperty().unbind()
-            edgeFX.text.layoutX = labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0
-            edgeFX.text.layoutY = boundingBox[3].toDouble() - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble()
+            timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
+                    KeyValue(edgeFX.text.layoutXProperty(), labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0),
+                    KeyValue(edgeFX.text.layoutYProperty(), boundingBox[3].toDouble() - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble())))
 
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
@@ -247,13 +250,7 @@ class ModelEditor : View {
                 listOfX.add(pos[0].toDouble())
                 listOfY.add(pos[1].toDouble())
             }
-            sort points in increasing x order
-            val pathInterpolator = BestFitSplineInterpolator(
-                listOfX.toDoubleArray(),
-                listOfY.toDoubleArray()
-            )
-            plotSpline(edgeFX.path, pathInterpolator, true)
-
+            logger.debug(edgeFX.path.elements.toString())
         }
 
         timeline.play()
@@ -302,23 +299,6 @@ class ModelEditor : View {
         selectedVertex = null
         selectedOffset = null
     }
-
-    // plots an interpolated curve in segments along a path
-    // if invert is true then y=0 will be in the bottom left, otherwise it is in the top right
-    private fun plotSpline(path: Path, pathInterpolator: Interpolator, invert: Boolean) {
-        val y0 = pathInterpolator.interpolate(0, PLOT_SIZE, 0.0).toDouble()
-        path.elements.addAll(
-                MoveTo(0.0, if (invert) PLOT_SIZE - y0 else y0)
-        )
-
-        for (i in 0 until N_SEGS) {
-            val frac = (i + 1.0) / N_SEGS
-            val x = frac * PLOT_SIZE
-            val y = pathInterpolator.interpolate(0, PLOT_SIZE, frac).toDouble()
-            path.elements.add(javafx.scene.shape.LineTo(x, if (invert) PLOT_SIZE - y else y))
-        }
-    }
-
 }
 
 private fun Any.getString(s: String): String {
