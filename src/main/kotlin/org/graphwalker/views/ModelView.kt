@@ -4,29 +4,25 @@ import com.sun.javafx.tk.FontLoader
 import com.sun.javafx.tk.Toolkit
 import guru.nidi.graphviz.*
 import guru.nidi.graphviz.attribute.GraphAttr
+import guru.nidi.graphviz.attribute.Shape
 import guru.nidi.graphviz.engine.Format
+import guru.nidi.graphviz.model.MutableGraph
 import javafx.animation.KeyFrame
 import javafx.animation.KeyValue
 import javafx.animation.Timeline
 import javafx.geometry.Point2D
-import javafx.scene.Group
-import javafx.scene.control.Label
 import javafx.scene.control.ScrollPane
 import javafx.scene.input.MouseEvent
 import javafx.scene.layout.Pane
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.MoveTo
-import javafx.scene.shape.Path
-import javafx.scene.shape.Rectangle
-import javafx.scene.text.Font
-import javafx.scene.text.FontPosture
-import javafx.scene.text.FontWeight
 import javafx.util.Duration
 import org.graphwalker.core.machine.Context
-import org.graphwalker.core.model.Edge
 import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
+import org.graphwalker.model.EdgeFX
+import org.graphwalker.model.VertexFX
 import org.json.JSONObject
 import org.slf4j.LoggerFactory
 import tornadofx.*
@@ -37,70 +33,6 @@ val vertices = mutableListOf<VertexFX>()
 val edges = mutableListOf<EdgeFX>()
 var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
 val ANIMATION_DURATION = 250.0
-
-class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
-    val element = vertex
-    var text: Label
-    var rect: Rectangle
-    var gvid: String
-
-    init {
-        gvid = ""
-
-        rect = rectangle {
-            fill = Color.LIGHTBLUE
-            height = 20.0
-            width = 50.0
-            strokeWidth = 1.0
-            stroke = Color.BLACK
-        }
-
-        text = label {
-            text = vertex.name
-            font = Font.font("courier", 16.0)
-        }
-
-        if (element.hasProperty("x") && element.hasProperty("y")) {
-            layoutX = element.getProperty("x").toString().toDouble()
-            layoutY = element.getProperty("y").toString().toDouble()
-        }
-    }
-}
-
-class EdgeFX(edge: Edge.RuntimeEdge) : Group() {
-    val element = edge
-    var path = Path()
-    var text = Label()
-    var startElement = MoveTo()
-    var endElement = LineTo1()
-
-    init {
-        val start: VertexFX
-        val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
-        start = if (element.sourceVertex != null) {
-            vertices.filter { it.element.id == element.sourceVertex.id }[0]
-        } else {
-            end
-        }
-
-        startElement.xProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
-        startElement.yProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
-
-        endElement.xProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
-        endElement.yProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
-
-        path.elements.addAll(startElement, endElement)
-        add(path)
-
-        text = label {
-            text = edge.name
-            font = Font.font("courier", FontWeight.THIN, FontPosture.REGULAR, 16.0)
-            layoutXProperty().bind(endElement.xProperty().subtract(startElement.xProperty()).divide(2.0).add(startElement.xProperty()))
-            layoutYProperty().bind(endElement.yProperty().subtract(startElement.yProperty()).divide(2.0).add(startElement.yProperty()))
-        }
-    }
-}
-
 
 class ModelEditor : View {
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -151,31 +83,10 @@ class ModelEditor : View {
     }
 
     private fun doAutoLayout() {
-        val g = graph("GraphWalker", directed = true) {
-            graph[guru.nidi.graphviz.attribute.GraphAttr.splines(GraphAttr.SplineMode.SPLINE),
-                    guru.nidi.graphviz.attribute.Font.name("courier"),
-                    guru.nidi.graphviz.attribute.Font.size(16)]
-            node[guru.nidi.graphviz.attribute.Font.name("courier"),
-                    guru.nidi.graphviz.attribute.Font.size(16),
-                    guru.nidi.graphviz.attribute.Shape.RECTANGLE]
-            edge[guru.nidi.graphviz.attribute.Font.name("courier"),
-                    guru.nidi.graphviz.attribute.Font.size(16)]
-            for (e in context.model.edges) {
-                if (e.sourceVertex == null) {
-                    (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
-                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
-                } else {
-                    (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
-                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
-                }
-            }
-        }
-        logger.debug(g.toGraphviz().render(Format.DOT).toString())
-        logger.debug(g.toGraphviz().render(Format.JSON0).toString())
-        g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
+        val g = getGraphVizDot()
 
         var timeline = Timeline()
-        val graphJSONObject = JSONObject(g.toGraphviz().render(Format.JSON0).toString())
+        val graphJSONObject = JSONObject(g?.toGraphviz()?.render(Format.JSON0).toString())
         var dpi = graphJSONObject.getString("dpi").toInt()
         dpi = 72
         val boundingBox = graphJSONObject.getString("bb").split(",")
@@ -263,6 +174,32 @@ class ModelEditor : View {
         }
 
         timeline.play()
+    }
+
+    private fun getGraphVizDot(): MutableGraph? {
+        val g = graph("GraphWalker", directed = true) {
+            graph[GraphAttr.splines(GraphAttr.SplineMode.SPLINE),
+                    guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16)]
+            node[guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16),
+                    Shape.RECTANGLE]
+            edge[guru.nidi.graphviz.attribute.Font.name("courier"),
+                    guru.nidi.graphviz.attribute.Font.size(16)]
+            for (e in context.model.edges) {
+                if (e.sourceVertex == null) {
+                    (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                } else {
+                    (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                            e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                }
+            }
+        }
+        logger.debug(g.toGraphviz().render(Format.DOT).toString())
+        logger.debug(g.toGraphviz().render(Format.JSON0).toString())
+        g.toGraphviz().render(Format.PNG).toFile(File("target/graphviz-model.png"))
+        return g
     }
 
     private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
