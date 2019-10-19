@@ -17,21 +17,22 @@ class EdgeFX(edge: Edge.RuntimeEdge, vertices: List<VertexFX>) : Group() {
     var text = Label()
     var startElement = MoveTo()
     var endElement = LineTo()
+    var startFX: VertexFX by singleAssign()
+    var targetFX: VertexFX by singleAssign()
 
     init {
-        val start: VertexFX
-        val end = vertices.filter { it.element.id == element.targetVertex.id }[0]
-        start = if (element.sourceVertex != null) {
+        targetFX = vertices.filter { it.element.id == element.targetVertex.id }[0]
+        startFX = if (element.sourceVertex != null) {
             vertices.filter { it.element.id == element.sourceVertex.id }[0]
         } else {
-            end
+            targetFX
         }
 
-        startElement.xProperty().bind(start.layoutXProperty().add(start.translateXProperty()).add(start.widthProperty().divide(2)))
-        startElement.yProperty().bind(start.layoutYProperty().add(start.translateYProperty()).add(start.heightProperty().divide(2)))
+        startElement.xProperty().bind(startFX.layoutXProperty().add(startFX.translateXProperty()).add(startFX.widthProperty().divide(2)))
+        startElement.yProperty().bind(startFX.layoutYProperty().add(startFX.translateYProperty()).add(startFX.heightProperty().divide(2)))
 
-        endElement.xProperty().bind(end.layoutXProperty().add(end.translateXProperty()).add(end.widthProperty().divide(2)))
-        endElement.yProperty().bind(end.layoutYProperty().add(end.translateYProperty()).add(end.heightProperty().divide(2)))
+        endElement.xProperty().bind(targetFX.layoutXProperty().add(targetFX.translateXProperty()).add(targetFX.widthProperty().divide(2)))
+        endElement.yProperty().bind(targetFX.layoutYProperty().add(targetFX.translateYProperty()).add(targetFX.heightProperty().divide(2)))
 
         path.elements.addAll(startElement, endElement)
         add(path)

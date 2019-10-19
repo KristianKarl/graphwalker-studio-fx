@@ -12,10 +12,10 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
     val element = vertex
     var text: Label
     var rect: Rectangle
-    var gvid: String
+    var gvid: Int
 
     init {
-        gvid = ""
+        gvid = -1
 
         rect = rectangle {
             fill = Color.LIGHTBLUE

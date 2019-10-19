@@ -106,11 +106,11 @@ class ModelEditor : View {
         for (edge in arr) {
             edge as JSONObject
             logger.debug(edge.toString())
-            var source_gvid: String by singleAssign()
-            var target_gvid: String by singleAssign()
+            var source_gvid: Int by singleAssign()
+            var target_gvid: Int by singleAssign()
             if (edge is JSONObject) {
-                source_gvid = edge.get("tail").toString()
-                target_gvid = edge.get("head").toString()
+                source_gvid = edge.getInt("tail")
+                target_gvid = edge.getInt("head")
             }
 
             val sourceFX = vertices.filter { it.gvid == source_gvid }[0]
@@ -118,28 +118,30 @@ class ModelEditor : View {
 
             var edgeFX: EdgeFX by singleAssign()
             for (e in edges) {
-                if (edge.has("label") && e.element.name == edge.getString("label")) {
-                    if (e.element.sourceVertex != null) {
-                        if (e.element.sourceVertex.id == sourceFX.element.id) {
-                            if (e.element.targetVertex.id == targetFX.element.id) {
-                                edgeFX = e
-                                break
-                            }
-                        }
-                    } else if (e.element.targetVertex.id == targetFX.element.id) {
+                if (edge.get("tail") == e.startFX.gvid &&
+                        edge.getInt("head") == e.targetFX.gvid) {
+                    if ((!edge.has("label") || edge.getString("label").isEmpty()) && !e.element.hasName()) {
                         edgeFX = e
                         break
+                    } else if (edge.has("label") && e.element.hasName()) {
+                        if (edge.getString("label") == e.element.name) {
+                            edgeFX = e
+                            break
+                        }
                     }
                 }
             }
             logger.debug(edgeFX.text.toString())
 
-            var labelPos = edge.getString("lp").split(",")
-            edgeFX.text.layoutXProperty().unbind()
-            edgeFX.text.layoutYProperty().unbind()
-            timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
-                    KeyValue(edgeFX.text.layoutXProperty(), labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0),
-                    KeyValue(edgeFX.text.layoutYProperty(), boundingBox[3].toDouble() - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble())))
+            // If edge has a label
+            if (edge.has("lp")) {
+                var labelPos = edge.getString("lp").split(",")
+                edgeFX.text.layoutXProperty().unbind()
+                edgeFX.text.layoutYProperty().unbind()
+                timeline.keyFrames.add(KeyFrame(Duration.millis(ANIMATION_DURATION),
+                        KeyValue(edgeFX.text.layoutXProperty(), labelPos[0].toDouble() - fontLoader.computeStringWidth(edgeFX.text.text, edgeFX.text.font).toDouble() / 2.0),
+                        KeyValue(edgeFX.text.layoutYProperty(), boundingBox[3].toDouble() - labelPos[1].toDouble() - fontLoader.getFontMetrics(edgeFX.text.font).lineHeight.toDouble())))
+            }
 
             edgeFX.path.elements.clear()
             var str = edge.getString("pos").replace("e,", "")
@@ -169,7 +171,7 @@ class ModelEditor : View {
 
             // Get the graphviz id, it's needed to uniquely identify edges later on
             if (node is JSONObject) {
-                vertexFX.gvid = node.get("_gvid").toString()
+                vertexFX.gvid = node.getInt("_gvid")
             }
 
             // The new rectangle size
@@ -201,15 +203,15 @@ class ModelEditor : View {
                                 e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                     } else {
                         (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
                     }
                 } else {
-                    if (e.sourceVertex == null) {
+                    if (e.name != null) {
                         (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
                                 e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                     } else {
                         (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
                     }
                 }
             }
