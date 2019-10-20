@@ -108,7 +108,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 }
                 subscribe<RunModelsEvent> { event ->
                     val executor = TestExecutor(contexts)
-                    executor.machine.addObserver(ExecutionObserver())
+                    executor.machine.addObserver(ExecutionObserver(tabs))
 
                     val result = executor.execute(true)
                     if (result.hasErrors()) {
