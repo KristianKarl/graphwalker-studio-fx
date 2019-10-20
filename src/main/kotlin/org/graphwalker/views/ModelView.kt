@@ -21,6 +21,7 @@ import javafx.util.Duration
 import org.graphwalker.core.machine.Context
 import org.graphwalker.core.model.Vertex
 import org.graphwalker.io.factory.json.JsonContext
+import org.graphwalker.model.ArrowHead
 import org.graphwalker.model.EdgeFX
 import org.graphwalker.model.VertexFX
 import org.json.JSONObject
@@ -159,6 +160,8 @@ class ModelEditor : View {
                     edgeFX.path.elements.add(LineTo1(pos[0].toDouble(), boundingBox[3].toDouble() - pos[1].toDouble()))
                 }
             }
+            edgeFX.path.elements.addAll(
+                    ArrowHead(edgeFX).elements)
             logger.debug(edgeFX.path.elements.toString())
         }
     }

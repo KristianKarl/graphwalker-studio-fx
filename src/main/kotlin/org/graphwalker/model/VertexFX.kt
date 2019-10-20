@@ -1,5 +1,6 @@
 package org.graphwalker.model
 
+import javafx.geometry.Point2D
 import javafx.scene.control.Label
 import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
@@ -37,5 +38,10 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
             layoutX = 0.0
             layoutY = 0.0
         }
+    }
+
+    fun getCenterPoint(): Point2D {
+        return Point2D(layoutX + rect.width.div(2),
+                layoutY + rect.height.div(2))
     }
 }
