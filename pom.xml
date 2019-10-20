@@ -45,6 +45,11 @@
             <version>${graphwalker.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.graphwalker</groupId>
+            <artifactId>graphwalker-java</artifactId>
+            <version>${graphwalker.version}</version>
+        </dependency>
+        <dependency>
             <groupId>guru.nidi</groupId>
             <artifactId>graphviz-kotlin</artifactId>
             <version>${graphviz-java.version}</version>

@@ -3,19 +3,26 @@ package org.graphwalker.views
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
+import javafx.scene.control.Button
 import javafx.scene.control.TabPane
 import javafx.scene.paint.Color
+import org.graphwalker.core.machine.Context
 import org.graphwalker.io.factory.json.JsonContextFactory
+import org.graphwalker.java.test.TestExecutor
+import org.graphwalker.observer.ExecutionObserver
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
 import java.nio.file.Paths
 
 class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
+class RunModelsEvent : FXEvent()
 
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
+    private var playButton: Button by singleAssign()
+    private lateinit var contexts: List<Context>
 
     override val root = borderpane {
         logger.debug(javafx.scene.text.Font.getFamilies().toString())
@@ -29,7 +36,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             button {
                 graphic = icon(FontAwesomeIcon.PLUS)
                 action {
-                    println("Open a new model editor")
+                    logger.debug("Open a new model editor")
                     numOfModels++
                     fire(NevModelEditorEvent(ModelEditor("Untitled-$numOfModels")))
                 }
@@ -53,11 +60,16 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
             separator()
 
-            button {
+            playButton = button {
                 graphic = icon(FontAwesomeIcon.PLAY)
                 disableProperty().set(true)
                 style {
                     backgroundColor += Color.BLACK
+                }
+                action {
+                    logger.debug("Will run the model(s)")
+                    graphic = icon(FontAwesomeIcon.PAUSE)
+                    fire(RunModelsEvent())
                 }
             }
             button {
@@ -94,6 +106,18 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         text = event.modelEditor.title
                     }
                 }
+                subscribe<RunModelsEvent> { event ->
+                    val executor = TestExecutor(contexts)
+                    executor.machine.addObserver(ExecutionObserver())
+
+                    val result = executor.execute(true)
+                    if (result.hasErrors()) {
+                        for (error in result.errors) {
+                            logger.error(error)
+                        }
+                    }
+                    logger.debug(("Done: [" + result.results.toString(2) + "]"))
+                }
             }
             style {
                 backgroundColor += c("#1E89B7")
@@ -104,10 +128,12 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             val modelFileName = app.parameters.named["model-file"]
             if (File(modelFileName).exists()) {
                 val factory = JsonContextFactory()
-                val contexts = factory.create(Paths.get(modelFileName))
+                contexts = factory.create(Paths.get(modelFileName))
                 for (context in contexts) {
                     tabs.add(ModelEditor(context))
                 }
+
+                playButton.disableProperty().set(false)
             }
         }
     }
