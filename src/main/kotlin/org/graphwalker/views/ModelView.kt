@@ -32,12 +32,13 @@ import javafx.scene.shape.LineTo as LineTo1
 
 
 class ModelEditor : View {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     val vertices = mutableListOf<VertexFX>()
     val edges = mutableListOf<EdgeFX>()
     var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
     val ANIMATION_DURATION = 250.0
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
 
     private var context: Context by singleAssign()
     private var workArea: Pane by singleAssign()

@@ -28,7 +28,7 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
 
         text = label {
             text = vertex.name
-            font = Font.font("courier", 16.0)
+            font = Font.font("DejaVu Sans Mono", 16.0)
         }
 
         if (element.hasProperty("x") && element.hasProperty("y")) {

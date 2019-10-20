@@ -6,6 +6,7 @@ import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
 import javafx.scene.control.TabPane
 import javafx.scene.paint.Color
 import org.graphwalker.io.factory.json.JsonContextFactory
+import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
 import java.nio.file.Paths
@@ -13,9 +14,12 @@ import java.nio.file.Paths
 class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
 
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
+    private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
 
     override val root = borderpane {
+        logger.debug(javafx.scene.text.Font.getFamilies().toString())
+
         prefHeight = 600.0
         prefWidth = 800.0
 

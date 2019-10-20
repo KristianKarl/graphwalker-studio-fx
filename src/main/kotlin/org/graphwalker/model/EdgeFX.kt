@@ -39,7 +39,7 @@ class EdgeFX(edge: Edge.RuntimeEdge, vertices: List<VertexFX>) : Group() {
 
         text = label {
             text = element.name
-            font = Font.font("courier", FontWeight.THIN, FontPosture.REGULAR, 16.0)
+            font = Font.font("DejaVu Sans Mono", FontWeight.THIN, FontPosture.REGULAR, 16.0)
             layoutXProperty().bind(endElement.xProperty().subtract(startElement.xProperty()).divide(2.0).add(startElement.xProperty()))
             layoutYProperty().bind(endElement.yProperty().subtract(startElement.yProperty()).divide(2.0).add(startElement.yProperty()))
         }
