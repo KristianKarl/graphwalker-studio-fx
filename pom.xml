@@ -16,6 +16,7 @@
         <logback.version>1.2.3</logback.version>
         <json.version>20190722</json.version>
         <commons-math3.version>3.6.1</commons-math3.version>
+        <jcomamander.version>1.78</jcomamander.version>
     </properties>
 
     <dependencies>
@@ -65,9 +66,9 @@
             <version>${logback.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-math3</artifactId>
-            <version>${commons-math3.version}</version>
+            <groupId>com.beust</groupId>
+            <artifactId>jcommander</artifactId>
+            <version>${jcomamander.version}</version>
         </dependency>
     </dependencies>
 
