@@ -3,28 +3,32 @@ package org.graphwalker.views
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
-import javafx.scene.control.Button
-import javafx.scene.control.Tab
+import javafx.application.Platform
 import javafx.scene.control.TabPane
 import javafx.scene.paint.Color
 import org.graphwalker.core.machine.Context
+import org.graphwalker.core.machine.ExecutionStatus
+import org.graphwalker.core.machine.SimpleMachine
 import org.graphwalker.io.factory.json.JsonContextFactory
-import org.graphwalker.java.test.TestExecutor
 import org.graphwalker.observer.ExecutionObserver
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
 import java.nio.file.Paths
 
+class LoadModelsFromFileEvent : FXEvent(EventBus.RunOn.BackgroundThread)
+class LoadedModelsFromFileEvent : FXEvent()
 class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
 class RunModelsEvent : FXEvent()
+class RunModelsDoneEvent : FXEvent()
+class RunModelsStopEvent : FXEvent()
 
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
-    private var playButton: Button by singleAssign()
     private var contexts = ArrayList<Context>()
     private var modelEditors = ArrayList<ModelEditor>()
+    val status: TaskStatus by inject()
 
     override val root = borderpane {
         logger.debug(javafx.scene.text.Font.getFamilies().toString())
@@ -35,6 +39,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         var numOfModels = 0
 
         left = vbox {
+            style {
+                backgroundColor += Color.BLACK
+            }
+
             button {
                 graphic = icon(FontAwesomeIcon.PLUS)
                 action {
@@ -62,15 +70,14 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
             separator()
 
-            playButton = button {
+            /**
+             * Play button
+             */
+            button {
                 graphic = icon(FontAwesomeIcon.PLAY)
                 tooltip("Dry run by GraphWalker")
-                onHover {
-                    style {
-                        backgroundColor += Color.RED
-                    }
-                }
                 disableProperty().set(true)
+
                 style {
                     backgroundColor += Color.BLACK
                 }
@@ -79,27 +86,60 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     graphic = icon(FontAwesomeIcon.PAUSE)
                     fire(RunModelsEvent())
                 }
+                subscribe<NevModelEditorEvent> { event ->
+                    logger.debug("Event received NevModelEditorEvent")
+                    disableProperty().set(false)
+                }
+                subscribe<LoadedModelsFromFileEvent> { event ->
+                    logger.debug("Event received LoadedModelsFromFileEvent")
+                    disableProperty().set(false)
+                }
+                subscribe<RunModelsDoneEvent> { event ->
+                    logger.debug("Event received RunModelsDoneEvent")
+                    graphic = icon(FontAwesomeIcon.PLAY)
+                }
             }
+
+            /**
+             * Step button
+             */
             button {
                 graphic = icon(FontAwesomeIcon.STEP_FORWARD)
                 disableProperty().set(true)
                 style {
                     backgroundColor += Color.BLACK
                 }
+                subscribe<RunModelsEvent> { event ->
+                    logger.debug("Event received RunModelsEvent")
+                    disableProperty().set(false)
+                }
+                subscribe<RunModelsStopEvent> { event ->
+                    logger.debug("Event received RunModelsStopEvent")
+                    disableProperty().set(true)
+                }
             }
+
+            /**
+             * Stop button
+             */
             button {
                 graphic = icon(FontAwesomeIcon.STOP)
                 disableProperty().set(true)
                 style {
                     backgroundColor += Color.BLACK
                 }
+                action {
+                    logger.debug("Will stop and reset all model(s)")
+                    fire(RunModelsStopEvent())
+                    resetModels()
+                }
+                subscribe<RunModelsEvent> { event ->
+                    logger.debug("Event received RunModelsEvent")
+                    disableProperty().set(false)
+                }
             }
 
             separator()
-
-            style {
-                backgroundColor += Color.BLACK
-            }
         }
 
         center = stackpane {
@@ -108,28 +148,36 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     fill = Color.WHITESMOKE
                 }
             }
+
             tabs = tabpane {
                 subscribe<NevModelEditorEvent> { event ->
+                    logger.debug("Event received NevModelEditorEvent")
                     contexts.add(event.modelEditor.context)
                     modelEditors.add(event.modelEditor)
                     tab(event.modelEditor) {
                         text = event.modelEditor.title
                     }
                 }
-                subscribe<RunModelsEvent> { event ->
-                    val executor = TestExecutor(contexts)
-                    executor.machine.addObserver(ExecutionObserver(modelEditors))
 
-                    val result = executor.execute(true)
-                    if (result.hasErrors()) {
-                        for (error in result.errors) {
-                            logger.error(error)
+                subscribe<RunModelsEvent> { event ->
+                    logger.debug("Event received RunModelsEvent")
+                    runAsync {
+                        val machine = SimpleMachine(contexts)
+                        machine.addObserver(ExecutionObserver(modelEditors))
+                        while (machine.hasNextStep()) {
+                            machine.nextStep
+                            updateProgress(machine.currentContext.pathGenerator.stopCondition.fulfilment, 1.0)
                         }
+
+                        fire(RunModelsDoneEvent())
+                        logger.debug("Done running the models")
+                    } ui {
+
                     }
-                    logger.debug(("Done: [" + result.results.toString(2) + "]"))
                 }
 
-                if (app.parameters.named["model-file"] != null) {
+                subscribe<LoadModelsFromFileEvent> { event ->
+                    logger.debug("Start loading models from file")
                     val modelFileName = app.parameters.named["model-file"]
                     if (File(modelFileName).exists()) {
                         val factory = JsonContextFactory()
@@ -142,12 +190,40 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                                 text = context.model.name
                             }
                         }
-                        playButton.disableProperty().set(false)
+                        logger.debug("Done loading modes from file")
                     }
+                    logger.debug("Fire LoadedModelsFromFileEvent")
+                    fire(LoadedModelsFromFileEvent())
                 }
             }
+
             style {
                 backgroundColor += c("#1E89B7")
+            }
+        }
+
+        bottom = hbox(4.0) {
+                    progressbar(status.progress)
+                    label(status.message)
+                    visibleWhen { status.running }
+                    paddingAll = 4
+        }
+
+        if (app.parameters.named["model-file"] != null) {
+            fire(LoadModelsFromFileEvent())
+        }
+    }
+
+    private fun resetModels() {
+        for (context in contexts) {
+            context.executionStatus = ExecutionStatus.NOT_EXECUTED
+        }
+        for (modelEditor in modelEditors) {
+            for (v in modelEditor.vertices) {
+                v.rect.fill = Color.LIGHTBLUE
+            }
+            for (e in modelEditor.edges) {
+                e.path.stroke = Color.BLACK
             }
         }
     }

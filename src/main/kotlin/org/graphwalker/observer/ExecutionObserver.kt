@@ -1,6 +1,5 @@
 package org.graphwalker.observer
 
-import javafx.scene.control.Tab
 import javafx.scene.paint.Color
 import org.graphwalker.core.event.EventType
 import org.graphwalker.core.event.Observer
@@ -32,7 +31,7 @@ class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer
         }
     }
 
-    fun getVertexFX(element: Element) : VertexFX {
+    fun getVertexFX(element: Element): VertexFX {
         for (modelEditor in modelEditors) {
             for (v in modelEditor.vertices) {
                 if (v.element.id == element.id) {
@@ -43,7 +42,7 @@ class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer
         throw IllegalArgumentException("Did not find vertex in model: " + element.id)
     }
 
-    fun getEdgeFX(element: Element) : EdgeFX {
+    fun getEdgeFX(element: Element): EdgeFX {
         for (modelEditor in modelEditors) {
             for (e in modelEditor.edges) {
                 if (e.element.id == element.id) {
