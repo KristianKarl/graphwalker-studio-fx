@@ -4,6 +4,7 @@ package org.graphwalker.views
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
 import javafx.scene.control.Button
+import javafx.scene.control.Tab
 import javafx.scene.control.TabPane
 import javafx.scene.paint.Color
 import org.graphwalker.core.machine.Context
@@ -118,22 +119,23 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     }
                     logger.debug(("Done: [" + result.results.toString(2) + "]"))
                 }
+
+                if (app.parameters.named["model-file"] != null) {
+                    val modelFileName = app.parameters.named["model-file"]
+                    if (File(modelFileName).exists()) {
+                        val factory = JsonContextFactory()
+                        contexts = factory.create(Paths.get(modelFileName))
+                        for (context in contexts) {
+                            tab(ModelEditor(context)) {
+                                text = context.model.name
+                            }
+                        }
+                        playButton.disableProperty().set(false)
+                    }
+                }
             }
             style {
                 backgroundColor += c("#1E89B7")
-            }
-        }
-
-        if (app.parameters.named["model-file"] != null) {
-            val modelFileName = app.parameters.named["model-file"]
-            if (File(modelFileName).exists()) {
-                val factory = JsonContextFactory()
-                contexts = factory.create(Paths.get(modelFileName))
-                for (context in contexts) {
-                    tabs.add(ModelEditor(context))
-                }
-
-                playButton.disableProperty().set(false)
             }
         }
     }
