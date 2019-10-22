@@ -4,7 +4,6 @@ import javafx.scene.control.Tab
 import javafx.scene.paint.Color
 import org.graphwalker.core.event.EventType
 import org.graphwalker.core.event.Observer
-import org.graphwalker.core.machine.Context
 import org.graphwalker.core.machine.Machine
 import org.graphwalker.core.model.Element
 import org.graphwalker.core.model.Vertex
@@ -22,11 +21,11 @@ class ExecutionObserver(tabs : List<Tab>) : Observer {
         if (EventType.BEFORE_ELEMENT == eventType) {
 
             if (element is Vertex.RuntimeVertex) {
-                logger.debug("Element is (vertex) : " + element)
+                logger.debug("Element is (vertex) : " + element.name)
                 var vertexFX = getVertexFX(element)
                 vertexFX.rect.fill = Color.GREEN
             } else {
-                logger.debug("Element is (edge) : " + element)
+                logger.debug("Element is (edge) : " + element.name)
                 var edgeFX = getEdgeFX(element)
                 edgeFX.path.stroke = Color.GREEN
             }

@@ -52,12 +52,12 @@ class ModelEditor : View {
         context = JsonContext()
     }
 
-    constructor(cntxt: Context) : super() {
-        context = cntxt
-        for (vertex in context.model.vertices) {
+    constructor(context: Context) : super(context.model.name) {
+        this.context = context
+        for (vertex in this.context.model.vertices) {
             vertices.add(createVertex(vertex))
         }
-        for (edge in context.model.edges) {
+        for (edge in this.context.model.edges) {
             val edgeFX = EdgeFX(edge, vertices)
             edges.add(edgeFX)
             workArea.add(edgeFX)

@@ -63,6 +63,12 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
             playButton = button {
                 graphic = icon(FontAwesomeIcon.PLAY)
+                tooltip("Dry run by GraphWalker")
+                onHover {
+                    style {
+                        backgroundColor += Color.RED
+                    }
+                }
                 disableProperty().set(true)
                 style {
                     backgroundColor += Color.BLACK
