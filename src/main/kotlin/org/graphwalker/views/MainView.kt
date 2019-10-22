@@ -23,7 +23,8 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
     private var playButton: Button by singleAssign()
-    private lateinit var contexts: List<Context>
+    private var contexts = ArrayList<Context>()
+    private var modelEditors = ArrayList<ModelEditor>()
 
     override val root = borderpane {
         logger.debug(javafx.scene.text.Font.getFamilies().toString())
@@ -109,13 +110,15 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             }
             tabs = tabpane {
                 subscribe<NevModelEditorEvent> { event ->
+                    contexts.add(event.modelEditor.context)
+                    modelEditors.add(event.modelEditor)
                     tab(event.modelEditor) {
                         text = event.modelEditor.title
                     }
                 }
                 subscribe<RunModelsEvent> { event ->
                     val executor = TestExecutor(contexts)
-                    executor.machine.addObserver(ExecutionObserver(tabs))
+                    executor.machine.addObserver(ExecutionObserver(modelEditors))
 
                     val result = executor.execute(true)
                     if (result.hasErrors()) {
@@ -130,9 +133,12 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     val modelFileName = app.parameters.named["model-file"]
                     if (File(modelFileName).exists()) {
                         val factory = JsonContextFactory()
-                        contexts = factory.create(Paths.get(modelFileName))
+                        contexts.clear()
+                        contexts.addAll(factory.create(Paths.get(modelFileName)))
                         for (context in contexts) {
-                            tab(ModelEditor(context)) {
+                            var modelEditor = ModelEditor(context)
+                            modelEditors.add(modelEditor)
+                            tab(modelEditor) {
                                 text = context.model.name
                             }
                         }

@@ -12,8 +12,8 @@ import org.graphwalker.model.VertexFX
 import org.graphwalker.views.ModelEditor
 import org.slf4j.LoggerFactory
 
-class ExecutionObserver(tabs : List<Tab>) : Observer {
-    private val tabs = tabs
+class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer {
+    private val modelEditors = modelEditors
     private val logger = LoggerFactory.getLogger(this::class.java)
 
 
@@ -33,8 +33,7 @@ class ExecutionObserver(tabs : List<Tab>) : Observer {
     }
 
     fun getVertexFX(element: Element) : VertexFX {
-        for (tab in tabs) {
-            val modelEditor = tab.content as ModelEditor
+        for (modelEditor in modelEditors) {
             for (v in modelEditor.vertices) {
                 if (v.element.id == element.id) {
                     return v
@@ -45,8 +44,7 @@ class ExecutionObserver(tabs : List<Tab>) : Observer {
     }
 
     fun getEdgeFX(element: Element) : EdgeFX {
-        for (tab in tabs) {
-            val modelEditor = tab.content as ModelEditor
+        for (modelEditor in modelEditors) {
             for (e in modelEditor.edges) {
                 if (e.element.id == element.id) {
                     return e

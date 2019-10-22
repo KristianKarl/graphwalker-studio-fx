@@ -40,7 +40,7 @@ class ModelEditor : View {
     val ANIMATION_DURATION = 250.0
 
 
-    private var context: Context by singleAssign()
+    var context: Context by singleAssign()
     private var workArea: Pane by singleAssign()
     private var selectedVertex: StackPane? = null
     private var selectedOffset: Point2D? = null
