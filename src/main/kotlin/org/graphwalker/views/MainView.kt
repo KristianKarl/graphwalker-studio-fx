@@ -217,7 +217,9 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         }
 
         bottom = hbox(4.0) {
-            progressbar(status.progress)
+            Platform.runLater {
+                progressbar(status.progress)
+            }
             label(status.message)
             visibleWhen { status.running }
             paddingAll = 4
