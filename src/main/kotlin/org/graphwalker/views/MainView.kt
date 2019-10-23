@@ -16,7 +16,7 @@ import tornadofx.*
 import java.io.File
 import java.nio.file.Paths
 
-class LoadModelsFromFileEvent : FXEvent(EventBus.RunOn.BackgroundThread)
+class LoadModelsFromFileEvent : FXEvent()
 class LoadedModelsFromFileEvent : FXEvent()
 class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
 class RunModelsEvent : FXEvent()
@@ -113,6 +113,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     logger.debug("Event received RunModelsEvent")
                     disableProperty().set(false)
                 }
+                subscribe<RunModelsDoneEvent> { event ->
+                    logger.debug("Event received RunModelsDoneEvent")
+                    disableProperty().set(true)
+                }
                 subscribe<RunModelsStopEvent> { event ->
                     logger.debug("Event received RunModelsStopEvent")
                     disableProperty().set(true)
@@ -136,6 +140,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 subscribe<RunModelsEvent> { event ->
                     logger.debug("Event received RunModelsEvent")
                     disableProperty().set(false)
+                }
+                subscribe<RunModelsStopEvent> { event ->
+                    logger.debug("Event received RunModelsStopEvent")
+                    disableProperty().set(true)
                 }
             }
 
@@ -195,6 +203,12 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     logger.debug("Fire LoadedModelsFromFileEvent")
                     fire(LoadedModelsFromFileEvent())
                 }
+
+                Platform.runLater {
+                    if (app.parameters.named["model-file"] != null) {
+                        fire(LoadModelsFromFileEvent())
+                    }
+                }
             }
 
             style {
@@ -203,14 +217,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         }
 
         bottom = hbox(4.0) {
-                    progressbar(status.progress)
-                    label(status.message)
-                    visibleWhen { status.running }
-                    paddingAll = 4
-        }
-
-        if (app.parameters.named["model-file"] != null) {
-            fire(LoadModelsFromFileEvent())
+            progressbar(status.progress)
+            label(status.message)
+            visibleWhen { status.running }
+            paddingAll = 4
         }
     }
 
