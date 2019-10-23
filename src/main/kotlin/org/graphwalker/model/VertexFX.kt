@@ -6,11 +6,11 @@ import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
-import org.graphwalker.core.model.Vertex
+import org.graphwalker.io.factory.json.JsonVertex
 import tornadofx.*
 
-class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
-    val element = vertex
+class VertexFX(vertex: JsonVertex) : StackPane() {
+    val jsonVertex = vertex
     var text: Label
     var rect: Rectangle
     var gvid: Int
@@ -27,16 +27,27 @@ class VertexFX(vertex: Vertex.RuntimeVertex) : StackPane() {
         }
 
         text = label {
-            text = vertex.name
+            text = vertex.vertex.name
             font = Font.font("DejaVu Sans Mono", 16.0)
+
+            textProperty().addListener { obs, old, new ->
+                jsonVertex.vertex.name = new
+            }
         }
 
-        if (element.hasProperty("x") && element.hasProperty("y")) {
-            layoutX = element.getProperty("x").toString().toDouble()
-            layoutY = element.getProperty("y").toString().toDouble()
+        if (jsonVertex.vertex.hasProperty("x") && jsonVertex.vertex.hasProperty("y")) {
+            layoutX = jsonVertex.vertex.getProperty("x").toString().toDouble()
+            layoutY = jsonVertex.vertex.getProperty("y").toString().toDouble()
         } else {
             layoutX = 0.0
             layoutY = 0.0
+        }
+
+        layoutXProperty().addListener { obs, old, new ->
+            jsonVertex.vertex.setProperty("x", new )
+        }
+        layoutYProperty().addListener { obs, old, new ->
+            jsonVertex.vertex.setProperty("y", new )
         }
     }
 

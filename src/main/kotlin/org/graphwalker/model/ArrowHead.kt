@@ -5,6 +5,7 @@ import javafx.scene.shape.LineTo
 import javafx.scene.shape.MoveTo
 import javafx.scene.shape.Path
 import org.slf4j.LoggerFactory
+import tornadofx.*
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -20,7 +21,7 @@ class ArrowHead(edgeFX: EdgeFX, arrowHeadSize: Double = defaultArrowHeadSize) : 
         var lastPathElement = edgeFX.path.elements.last() as LineTo
 
         // Line
-        logger.debug("Arrow head for edge  " + edgeFX.element.name)
+        logger.debug("Arrow head for edge  " + edgeFX.jsonEdge.edge.name)
         logger.debug("Move to " + lastPathElement)
         elements.add(MoveTo(lastPathElement.x, lastPathElement.y))
 

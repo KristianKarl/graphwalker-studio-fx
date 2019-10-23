@@ -3,32 +3,50 @@ package org.graphwalker.views
 
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView
-import javafx.application.Platform
 import javafx.scene.control.TabPane
 import javafx.scene.paint.Color
+import javafx.stage.FileChooser
+import org.graphwalker.controller.TimeoutController
 import org.graphwalker.core.machine.Context
-import org.graphwalker.core.machine.ExecutionStatus
-import org.graphwalker.core.machine.SimpleMachine
+import org.graphwalker.core.machine.ExecutionContext
+import org.graphwalker.dsl.antlr.generator.GeneratorFactory
+import org.graphwalker.exceptions.UnsupportedFileFormat
+import org.graphwalker.io.factory.ContextFactory
+import org.graphwalker.io.factory.ContextFactoryScanner
+import org.graphwalker.io.factory.dot.DotContextFactory
 import org.graphwalker.io.factory.json.JsonContextFactory
+import org.graphwalker.io.factory.json.JsonModel
+import org.graphwalker.io.factory.yed.YEdContextFactory
+import org.graphwalker.java.test.TestExecutor
 import org.graphwalker.observer.ExecutionObserver
+import org.graphwalker.observer.ProgressEvent
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
-import java.nio.file.Paths
+import java.io.PrintWriter
+import javax.script.ScriptEngine
+import javax.script.SimpleBindings
 
-class LoadModelsFromFileEvent : FXEvent()
+class LoadModelsFromFileEvent(val modelFile: File) : FXEvent()
 class LoadedModelsFromFileEvent : FXEvent()
+
 class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
+
 class RunModelsEvent : FXEvent()
 class RunModelsDoneEvent : FXEvent()
 class RunModelsStopEvent : FXEvent()
 
+class ModelsAreChangedEvent : FXEvent()
+class ModelsAreSavedEvent : FXEvent()
+
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
-    private var contexts = ArrayList<Context>()
     private var modelEditors = ArrayList<ModelEditor>()
-    val status: TaskStatus by inject()
+    private var startElementId = String()
+
+    private val status: TaskStatus by inject()
+    private val controller: TimeoutController by inject()
 
     override val root = borderpane {
         logger.debug(javafx.scene.text.Font.getFamilies().toString())
@@ -43,28 +61,66 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 backgroundColor += Color.BLACK
             }
 
+            /**
+             * Add model button
+             */
             button {
                 graphic = icon(FontAwesomeIcon.PLUS)
                 action {
                     logger.debug("Open a new model editor")
                     numOfModels++
+                    logger.debug("NevModelEditorEvent fired")
                     fire(NevModelEditorEvent(ModelEditor("Untitled-$numOfModels")))
                 }
                 style {
                     backgroundColor += Color.BLACK
                 }
             }
+
+            /**
+             * Open file button
+             */
             button {
                 graphic = icon(FontAwesomeIcon.FOLDER_OPEN_ALT)
                 style {
                     backgroundColor += Color.BLACK
                 }
+                action {
+                    val fileNames = chooseFile(title = "Open GraphWalker model",
+                            filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker", "*.json"),
+                                    FileChooser.ExtensionFilter("Graphml - yEd", "*.graphml")),
+                            mode = FileChooserMode.Single )
+                    if(fileNames.size > 0) {
+                        logger.debug("LoadModelsFromFileEvent fired")
+                        fire(LoadModelsFromFileEvent(fileNames[0]))
+                    }
+                }
             }
+
+            /**
+             * Save file button
+             */
             button {
                 graphic = icon(FontAwesomeIcon.SAVE)
                 disableProperty().set(true)
+                action {
+                    val fileNames = chooseFile(title="Save GraphWalker model as",
+                            filters=arrayOf(FileChooser.ExtensionFilter("GraphWalker file", "*.json")),
+                            mode=FileChooserMode.Save)
+                    if(fileNames.size > 0) {
+                        var contexts = createContexts()
+                        val outputFactory = ContextFactoryScanner.get(fileNames[0].toPath())
+                        PrintWriter(fileNames[0]).use { out -> out.println(outputFactory.getAsString(contexts)) }
+                        logger.debug("ModelsAreSavedEvent fired")
+                        fire(ModelsAreSavedEvent())
+                    }
+                }
                 style {
                     backgroundColor += Color.BLACK
+                }
+                subscribe<ModelsAreChangedEvent> { event ->
+                    logger.debug("ModelsAreChangedEvent received")
+                    disableProperty().set(false)
                 }
             }
 
@@ -84,18 +140,19 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 action {
                     logger.debug("Will run the model(s)")
                     graphic = icon(FontAwesomeIcon.PAUSE)
+                    logger.debug("RunModelsEvent fired")
                     fire(RunModelsEvent())
                 }
                 subscribe<NevModelEditorEvent> { event ->
-                    logger.debug("Event received NevModelEditorEvent")
+                    logger.debug("NevModelEditorEvent received")
                     disableProperty().set(false)
                 }
                 subscribe<LoadedModelsFromFileEvent> { event ->
-                    logger.debug("Event received LoadedModelsFromFileEvent")
+                    logger.debug("LoadedModelsFromFileEvent received")
                     disableProperty().set(false)
                 }
                 subscribe<RunModelsDoneEvent> { event ->
-                    logger.debug("Event received RunModelsDoneEvent")
+                    logger.debug("RunModelsDoneEvent received")
                     graphic = icon(FontAwesomeIcon.PLAY)
                 }
             }
@@ -110,15 +167,15 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     backgroundColor += Color.BLACK
                 }
                 subscribe<RunModelsEvent> { event ->
-                    logger.debug("Event received RunModelsEvent")
+                    logger.debug("RunModelsEvent received")
                     disableProperty().set(false)
                 }
                 subscribe<RunModelsDoneEvent> { event ->
-                    logger.debug("Event received RunModelsDoneEvent")
+                    logger.debug("RunModelsDoneEvent received")
                     disableProperty().set(true)
                 }
                 subscribe<RunModelsStopEvent> { event ->
-                    logger.debug("Event received RunModelsStopEvent")
+                    logger.debug("RunModelsStopEvent received")
                     disableProperty().set(true)
                 }
             }
@@ -133,16 +190,16 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     backgroundColor += Color.BLACK
                 }
                 action {
-                    logger.debug("Will stop and reset all model(s)")
+                    logger.debug("RunModelsStopEvent fired")
                     fire(RunModelsStopEvent())
                     resetModels()
                 }
                 subscribe<RunModelsEvent> { event ->
-                    logger.debug("Event received RunModelsEvent")
+                    logger.debug("RunModelsEvent received")
                     disableProperty().set(false)
                 }
                 subscribe<RunModelsStopEvent> { event ->
-                    logger.debug("Event received RunModelsStopEvent")
+                    logger.debug("RunModelsStopEvent received")
                     disableProperty().set(true)
                 }
             }
@@ -159,54 +216,77 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
             tabs = tabpane {
                 subscribe<NevModelEditorEvent> { event ->
-                    logger.debug("Event received NevModelEditorEvent")
-                    contexts.add(event.modelEditor.context)
+                    logger.debug("NevModelEditorEvent received")
                     modelEditors.add(event.modelEditor)
                     tab(event.modelEditor) {
                         text = event.modelEditor.title
                     }
+                    logger.debug("ModelsAreChangedEvent fired")
+                    fire(ModelsAreChangedEvent())
                 }
 
                 subscribe<RunModelsEvent> { event ->
-                    logger.debug("Event received RunModelsEvent")
+                    logger.debug("RunModelsEvent received")
                     runAsync {
-                        val machine = SimpleMachine(contexts)
-                        machine.addObserver(ExecutionObserver(modelEditors))
-                        while (machine.hasNextStep()) {
-                            machine.nextStep
-                            updateProgress(machine.currentContext.pathGenerator.stopCondition.fulfilment, 1.0)
+                        subscribe<ProgressEvent> { event ->
+                            logger.debug("ProgressEvent received")
+                            updateProgress(event.completed, 1.0)
                         }
-
-                        fire(RunModelsDoneEvent())
-                        logger.debug("Done running the models")
+                        val executor = TestExecutor(createContexts())
+                        executor.machine.addObserver(ExecutionObserver(modelEditors))
+                        val result = executor.execute(true)
+                        if (result.hasErrors()) {
+                            for (error in result.errors) {
+                                logger.error(error)
+                            }
+                        }
+                        logger.debug(("Done: [" + result.results.toString(2) + "]"))
                     } ui {
 
                     }
                 }
 
                 subscribe<LoadModelsFromFileEvent> { event ->
-                    logger.debug("Start loading models from file")
-                    val modelFileName = app.parameters.named["model-file"]
-                    if (File(modelFileName).exists()) {
-                        val factory = JsonContextFactory()
-                        contexts.clear()
-                        contexts.addAll(factory.create(Paths.get(modelFileName)))
-                        for (context in contexts) {
-                            var modelEditor = ModelEditor(context)
-                            modelEditors.add(modelEditor)
-                            tab(modelEditor) {
-                                text = context.model.name
-                            }
-                        }
-                        logger.debug("Done loading modes from file")
+                    logger.debug("LoadModelsFromFileEvent received")
+
+                    var factory : ContextFactory by singleAssign()
+                    factory = when {
+                        YEdContextFactory().accept(event.modelFile.toPath()) -> YEdContextFactory()
+                        JsonContextFactory().accept(event.modelFile.toPath()) -> JsonContextFactory()
+                        DotContextFactory().accept(event.modelFile.toPath()) -> DotContextFactory()
+                        else -> throw UnsupportedFileFormat(event.modelFile.absolutePath)
                     }
-                    logger.debug("Fire LoadedModelsFromFileEvent")
+
+                    val localContexts = factory.create(event.modelFile.toPath())
+                    for (context in localContexts) {
+                        val jsonModel = JsonModel()
+                        jsonModel.setModel(context.model)
+                        if (context.pathGenerator != null) {
+                            jsonModel.setGenerator(context.pathGenerator.toString())
+                        }
+                        if (context.nextElement != null) {
+                            startElementId = context.nextElement.id
+                        }
+
+                        var modelEditor = ModelEditor(jsonModel)
+
+                        modelEditors.add(modelEditor)
+                        tab(modelEditor) {
+                            text = jsonModel.name
+                        }
+                    }
+
+                    logger.debug("LoadedModelsFromFileEvent fired")
                     fire(LoadedModelsFromFileEvent())
+                    logger.debug("ModelsAreChangedEvent fired")
+                    fire(ModelsAreChangedEvent())
                 }
 
-                Platform.runLater {
+                runLater {
                     if (app.parameters.named["model-file"] != null) {
-                        fire(LoadModelsFromFileEvent())
+                        val fileName = app.parameters.named["model-file"];
+                        logger.debug("LoadModelsFromFileEvent fired")
+                        fire(LoadModelsFromFileEvent(File(fileName)))
                     }
                 }
             }
@@ -217,7 +297,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         }
 
         bottom = hbox(4.0) {
-            Platform.runLater {
+            runLater {
                 progressbar(status.progress)
             }
             label(status.message)
@@ -226,10 +306,31 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
         }
     }
 
-    private fun resetModels() {
-        for (context in contexts) {
-            context.executionStatus = ExecutionStatus.NOT_EXECUTED
+    private fun createContexts(): ArrayList<Context> {
+        var contexts = ArrayList<Context>()
+        for (modelEditor in modelEditors) {
+            val context = object : ExecutionContext() {
+                override fun getScriptEngine(): ScriptEngine {
+                    scriptEngine.put("global", SimpleBindings())
+                    return super.getScriptEngine()
+                }
+            }
+            context.model = modelEditor.model.model.build()
+            context.pathGenerator = GeneratorFactory.parse(modelEditor.model.generator)
+            val jsonVertex = modelEditor.model.vertices.filter { it.vertex.id == startElementId }.first()
+            if (jsonVertex != null) {
+                context.setNextElement(jsonVertex.vertex)
+            }
+            val jsonEdge = modelEditor.model.edges.filter { it.edge.id == startElementId }.first()
+            if (jsonEdge != null) {
+                context.setNextElement(jsonEdge.edge)
+            }
+            contexts.add(context)
         }
+        return contexts
+    }
+
+    private fun resetModels() {
         for (modelEditor in modelEditors) {
             for (v in modelEditor.vertices) {
                 v.rect.fill = Color.LIGHTBLUE

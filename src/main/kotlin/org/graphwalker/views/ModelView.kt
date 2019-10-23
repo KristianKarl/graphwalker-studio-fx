@@ -18,9 +18,8 @@ import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.MoveTo
 import javafx.util.Duration
-import org.graphwalker.core.machine.Context
-import org.graphwalker.core.model.Vertex
-import org.graphwalker.io.factory.json.JsonContext
+import org.graphwalker.io.factory.json.JsonModel
+import org.graphwalker.io.factory.json.JsonVertex
 import org.graphwalker.model.ArrowHead
 import org.graphwalker.model.EdgeFX
 import org.graphwalker.model.VertexFX
@@ -40,7 +39,7 @@ class ModelEditor : View {
     val ANIMATION_DURATION = 250.0
 
 
-    var context: Context by singleAssign()
+    var model = JsonModel()
     private var workArea: Pane by singleAssign()
     private var selectedVertex: StackPane? = null
     private var selectedOffset: Point2D? = null
@@ -49,15 +48,14 @@ class ModelEditor : View {
     private val N_SEGS = PLOT_SIZE / 10
 
     constructor(title: String) : super(title) {
-        context = JsonContext()
     }
 
-    constructor(context: Context) : super(context.model.name) {
-        this.context = context
-        for (vertex in this.context.model.vertices) {
+    constructor(model: JsonModel) : super(model.name) {
+        this.model = model
+        for (vertex in this.model.vertices) {
             vertices.add(createVertex(vertex))
         }
-        for (edge in this.context.model.edges) {
+        for (edge in this.model.edges) {
             val edgeFX = EdgeFX(edge, vertices)
             edges.add(edgeFX)
             workArea.add(edgeFX)
@@ -103,6 +101,10 @@ class ModelEditor : View {
         timeline.play()
     }
 
+    private fun isNullOrEmpty(str: String?): Boolean {
+        return if (str != null && !str.isEmpty()) false else true
+    }
+
     private fun layoutEdges(graphJSONObject: JSONObject, timeline: Timeline, boundingBox: List<String>) {
         var arr = graphJSONObject.getJSONArray("edges")
         for (edge in arr) {
@@ -122,11 +124,11 @@ class ModelEditor : View {
             for (e in edges) {
                 if (edge.get("tail") == e.startFX.gvid &&
                         edge.getInt("head") == e.targetFX.gvid) {
-                    if ((!edge.has("label") || edge.getString("label").isEmpty()) && !e.element.hasName()) {
+                    if ((!edge.has("label") || edge.getString("label").isEmpty()) && isNullOrEmpty(e.jsonEdge.edge.name)) {
                         edgeFX = e
                         break
-                    } else if (edge.has("label") && e.element.hasName()) {
-                        if (edge.getString("label") == e.element.name) {
+                    } else if (edge.has("label") && !isNullOrEmpty(e.jsonEdge.edge.name)) {
+                        if (edge.getString("label") == e.jsonEdge.edge.name) {
                             edgeFX = e
                             break
                         }
@@ -171,7 +173,7 @@ class ModelEditor : View {
         var arr = graphJSONObject.getJSONArray("objects")
         for (node in arr) {
             logger.debug(node.toString())
-            var vertexFX = vertices.filter { it.element.id == node.getString("name") }[0]
+            var vertexFX = vertices.filter { it.jsonVertex.vertex.id == node.getString("name") }[0]
 
             // Get the graphviz id, it's needed to uniquely identify edges later on
             if (node is JSONObject) {
@@ -191,6 +193,7 @@ class ModelEditor : View {
     }
 
     private fun getGraphVizDot(): MutableGraph? {
+        val runtimeModel = model.getModel().build()
         val g = graph("GraphWalker", directed = true) {
             graph[GraphAttr.splines(GraphAttr.SplineMode.SPLINE),
                     guru.nidi.graphviz.attribute.Font.name("courier"),
@@ -200,22 +203,22 @@ class ModelEditor : View {
                     Shape.RECTANGLE]
             edge[guru.nidi.graphviz.attribute.Font.name("courier"),
                     guru.nidi.graphviz.attribute.Font.size(16)]
-            for (e in context.model.edges) {
-                if (e.sourceVertex == null) {
-                    if (e.name != null) {
-                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+            for (e in model.edges) {
+                if (e.sourceVertexId == null) {
+                    if (e.edge.name != null) {
+                        (e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)] -
+                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.edge.name)]
                     } else {
-                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
+                        (e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)] -
+                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])
                     }
                 } else {
-                    if (e.name != null) {
-                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
+                    if (e.edge.name != null) {
+                        (e.sourceVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.sourceVertex.name)] -
+                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.edge.name)]
                     } else {
-                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
-                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
+                        (e.sourceVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.sourceVertex.name)] -
+                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])
                     }
                 }
             }
@@ -226,8 +229,8 @@ class ModelEditor : View {
         return g
     }
 
-    private fun createVertex(vertex: Vertex.RuntimeVertex): VertexFX {
-        val vertexFX = VertexFX(vertex)
+    private fun createVertex(jsonVertex: JsonVertex): VertexFX {
+        val vertexFX = VertexFX(jsonVertex)
         vertexFX.rect.width = fontLoader.computeStringWidth(vertexFX.text.text, vertexFX.text.font).toDouble()
         vertexFX.rect.height = fontLoader.getFontMetrics(vertexFX.text.font).lineHeight.toDouble()
         return vertexFX
