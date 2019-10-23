@@ -36,6 +36,7 @@ class RunModelsStopEvent : FXEvent()
 
 class ModelsAreChangedEvent : FXEvent()
 class ModelsAreSavedEvent : FXEvent()
+class ClearAllModelsEvent : FXEvent()
 
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
@@ -84,6 +85,9 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     backgroundColor += Color.BLACK
                 }
                 action {
+                    logger.debug("ClearAllModelsEvent fired")
+                    fire(ClearAllModelsEvent())
+
                     val fileNames = chooseFile(title = "Open GraphWalker model",
                             filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker", "*.json"),
                                     FileChooser.ExtensionFilter("Graphml - yEd", "*.graphml")),
@@ -298,6 +302,12 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         logger.debug("LoadModelsFromFileEvent fired")
                         fire(LoadModelsFromFileEvent(File(fileName)))
                     }
+                }
+
+                subscribe<ClearAllModelsEvent> { event ->
+                    logger.debug("ClearAllModelsEvent received")
+                    tabs.removeAll()
+                    TODO("Above does not remove tabs")
                 }
             }
 
