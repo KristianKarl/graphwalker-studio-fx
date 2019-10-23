@@ -8,7 +8,6 @@ import javafx.scene.paint.Color
 import javafx.stage.FileChooser
 import org.graphwalker.controller.TimeoutController
 import org.graphwalker.core.machine.Context
-import org.graphwalker.core.machine.ExecutionContext
 import org.graphwalker.dsl.antlr.generator.GeneratorFactory
 import org.graphwalker.exceptions.UnsupportedFileFormat
 import org.graphwalker.io.factory.ContextFactory
@@ -20,12 +19,11 @@ import org.graphwalker.io.factory.yed.YEdContextFactory
 import org.graphwalker.java.test.TestExecutor
 import org.graphwalker.observer.ExecutionObserver
 import org.graphwalker.observer.ProgressEvent
+import org.graphwalker.observer.SelectModelEditor
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
 import java.io.PrintWriter
-import javax.script.ScriptEngine
-import javax.script.SimpleBindings
 
 class LoadModelsFromFileEvent(val modelFile: File) : FXEvent()
 class LoadedModelsFromFileEvent : FXEvent()
@@ -89,8 +87,8 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     val fileNames = chooseFile(title = "Open GraphWalker model",
                             filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker", "*.json"),
                                     FileChooser.ExtensionFilter("Graphml - yEd", "*.graphml")),
-                            mode = FileChooserMode.Single )
-                    if(fileNames.size > 0) {
+                            mode = FileChooserMode.Single)
+                    if (fileNames.isNotEmpty()) {
                         logger.debug("LoadModelsFromFileEvent fired")
                         fire(LoadModelsFromFileEvent(fileNames[0]))
                     }
@@ -104,11 +102,11 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 graphic = icon(FontAwesomeIcon.SAVE)
                 disableProperty().set(true)
                 action {
-                    val fileNames = chooseFile(title="Save GraphWalker model as",
-                            filters=arrayOf(FileChooser.ExtensionFilter("GraphWalker file", "*.json")),
-                            mode=FileChooserMode.Save)
-                    if(fileNames.size > 0) {
-                        var contexts = createContexts()
+                    val fileNames = chooseFile(title = "Save GraphWalker model as",
+                            filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker file", "*.json")),
+                            mode = FileChooserMode.Save)
+                    if (fileNames.isNotEmpty()) {
+                        val contexts = createContexts()
                         val outputFactory = ContextFactoryScanner.get(fileNames[0].toPath())
                         PrintWriter(fileNames[0]).use { out -> out.println(outputFactory.getAsString(contexts)) }
                         logger.debug("ModelsAreSavedEvent fired")
@@ -227,6 +225,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
                 subscribe<RunModelsEvent> { event ->
                     logger.debug("RunModelsEvent received")
+                    resetModels()
                     runAsync {
                         subscribe<ProgressEvent> { event ->
                             logger.debug("ProgressEvent received")
@@ -240,16 +239,17 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                                 logger.error(error)
                             }
                         }
-                        logger.debug(("Done: [" + result.results.toString(2) + "]"))
+                        logger.debug("Done: [" + result.results.toString(2) + "]")
                     } ui {
-
+                        logger.debug("RunModelsDoneEvent fired")
+                        fire(RunModelsDoneEvent())
                     }
                 }
 
                 subscribe<LoadModelsFromFileEvent> { event ->
                     logger.debug("LoadModelsFromFileEvent received")
 
-                    var factory : ContextFactory by singleAssign()
+                    var factory: ContextFactory by singleAssign()
                     factory = when {
                         YEdContextFactory().accept(event.modelFile.toPath()) -> YEdContextFactory()
                         JsonContextFactory().accept(event.modelFile.toPath()) -> JsonContextFactory()
@@ -262,7 +262,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         val jsonModel = JsonModel()
                         jsonModel.setModel(context.model)
                         if (context.pathGenerator != null) {
-                            jsonModel.setGenerator(context.pathGenerator.toString())
+                            jsonModel.generator = context.pathGenerator.toString()
                         }
                         if (context.nextElement != null) {
                             startElementId = context.nextElement.id
@@ -282,9 +282,19 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     fire(ModelsAreChangedEvent())
                 }
 
+                subscribe<SelectModelEditor> { event ->
+                    logger.debug("SelectModelEditor received")
+                    for (tab in tabs) {
+                        if (tab.content == event.modelEditor.root) {
+                            selectionModel.select(tab)
+                            return@subscribe
+                        }
+                    }
+                }
+
                 runLater {
                     if (app.parameters.named["model-file"] != null) {
-                        val fileName = app.parameters.named["model-file"];
+                        val fileName = app.parameters.named["model-file"]
                         logger.debug("LoadModelsFromFileEvent fired")
                         fire(LoadModelsFromFileEvent(File(fileName)))
                     }
@@ -309,21 +319,16 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private fun createContexts(): ArrayList<Context> {
         var contexts = ArrayList<Context>()
         for (modelEditor in modelEditors) {
-            val context = object : ExecutionContext() {
-                override fun getScriptEngine(): ScriptEngine {
-                    scriptEngine.put("global", SimpleBindings())
-                    return super.getScriptEngine()
-                }
-            }
+            val context = ExecutionContextFX()
             context.model = modelEditor.model.model.build()
             context.pathGenerator = GeneratorFactory.parse(modelEditor.model.generator)
-            val jsonVertex = modelEditor.model.vertices.filter { it.vertex.id == startElementId }.first()
-            if (jsonVertex != null) {
-                context.setNextElement(jsonVertex.vertex)
+            val vList = context.model.vertices.filter { it.id == startElementId }
+            if (vList.isNotEmpty()) {
+                context.nextElement = vList.last()
             }
-            val jsonEdge = modelEditor.model.edges.filter { it.edge.id == startElementId }.first()
-            if (jsonEdge != null) {
-                context.setNextElement(jsonEdge.edge)
+            val eList = context.model.edges.filter { it.id == startElementId }
+            if (eList.isNotEmpty()) {
+                context.nextElement = eList.last()
             }
             contexts.add(context)
         }

@@ -47,8 +47,7 @@ class ModelEditor : View {
     private val PLOT_SIZE = 500
     private val N_SEGS = PLOT_SIZE / 10
 
-    constructor(title: String) : super(title) {
-    }
+    constructor(title: String) : super(title)
 
     constructor(model: JsonModel) : super(model.name) {
         this.model = model
@@ -102,7 +101,7 @@ class ModelEditor : View {
     }
 
     private fun isNullOrEmpty(str: String?): Boolean {
-        return if (str != null && !str.isEmpty()) false else true
+        return !(str != null && !str.isEmpty())
     }
 
     private fun layoutEdges(graphJSONObject: JSONObject, timeline: Timeline, boundingBox: List<String>) {
@@ -193,7 +192,7 @@ class ModelEditor : View {
     }
 
     private fun getGraphVizDot(): MutableGraph? {
-        val runtimeModel = model.getModel().build()
+        val runtimeModel = model.model.build()
         val g = graph("GraphWalker", directed = true) {
             graph[GraphAttr.splines(GraphAttr.SplineMode.SPLINE),
                     guru.nidi.graphviz.attribute.Font.name("courier"),
@@ -203,22 +202,22 @@ class ModelEditor : View {
                     Shape.RECTANGLE]
             edge[guru.nidi.graphviz.attribute.Font.name("courier"),
                     guru.nidi.graphviz.attribute.Font.size(16)]
-            for (e in model.edges) {
-                if (e.sourceVertexId == null) {
-                    if (e.edge.name != null) {
-                        (e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)] -
-                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.edge.name)]
+            for (e in runtimeModel.edges) {
+                if (e.sourceVertex == null) {
+                    if (e.name != null) {
+                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                     } else {
-                        (e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)] -
-                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])
+                        (e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
                     }
                 } else {
-                    if (e.edge.name != null) {
-                        (e.sourceVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.sourceVertex.name)] -
-                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.edge.name)]
+                    if (e.name != null) {
+                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])[guru.nidi.graphviz.attribute.Label.of(e.name)]
                     } else {
-                        (e.sourceVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.sourceVertex.name)] -
-                                e.targetVertexId[guru.nidi.graphviz.attribute.Label.of(e.edge.targetVertex.name)])
+                        (e.sourceVertex.id[guru.nidi.graphviz.attribute.Label.of(e.sourceVertex.name)] -
+                                e.targetVertex.id[guru.nidi.graphviz.attribute.Label.of(e.targetVertex.name)])
                     }
                 }
             }

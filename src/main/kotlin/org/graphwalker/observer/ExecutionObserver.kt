@@ -6,17 +6,16 @@ import org.graphwalker.core.event.Observer
 import org.graphwalker.core.machine.Machine
 import org.graphwalker.core.model.Element
 import org.graphwalker.core.model.Vertex
-import org.graphwalker.model.EdgeFX
-import org.graphwalker.model.VertexFX
 import org.graphwalker.views.ModelEditor
 import org.slf4j.LoggerFactory
 import tornadofx.*
 
 class ProgressEvent(val completed: Double) : FXEvent()
+class SelectModelEditor(val modelEditor: ModelEditor) : FXEvent()
 
 class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer, Controller() {
-    private val modelEditors = modelEditors
     private val logger = LoggerFactory.getLogger(this::class.java)
+    private val modelEditors = modelEditors
     private var lastTimeCheck = System.currentTimeMillis()
     private val interval = 200L
 
@@ -26,12 +25,10 @@ class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer
 
             if (element is Vertex.RuntimeVertex) {
                 logger.debug("Element is (vertex) : " + element.name)
-                var vertexFX = getVertexFX(element)
-                vertexFX.rect.fill = Color.GREEN
+                highLightVertexFX(element)
             } else {
                 logger.debug("Element is (edge) : " + element.name)
-                var edgeFX = getEdgeFX(element)
-                edgeFX.path.stroke = Color.GREEN
+                highlightEdgeFX(element)
             }
             if (System.currentTimeMillis() - lastTimeCheck > interval) {
                 logger.debug("ProgressEvent fired")
@@ -41,22 +38,28 @@ class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer
         }
     }
 
-    fun getVertexFX(element: Element): VertexFX {
+    private fun highLightVertexFX(element: Element) {
         for (modelEditor in modelEditors) {
             for (v in modelEditor.vertices) {
                 if (v.jsonVertex.vertex.id == element.id) {
-                    return v
+                    v.rect.fill = Color.GREEN
+                    logger.debug("SelectModelEditor fired")
+                    fire(SelectModelEditor(modelEditor))
+                    return
                 }
             }
         }
         throw IllegalArgumentException("Did not find vertex in model: " + element.id)
     }
 
-    fun getEdgeFX(element: Element): EdgeFX {
+    private fun highlightEdgeFX(element: Element) {
         for (modelEditor in modelEditors) {
             for (e in modelEditor.edges) {
                 if (e.jsonEdge.edge.id == element.id) {
-                    return e
+                    e.path.stroke = Color.GREEN
+                    logger.debug("SelectModelEditor fired")
+                    fire(SelectModelEditor(modelEditor))
+                    return
                 }
             }
         }

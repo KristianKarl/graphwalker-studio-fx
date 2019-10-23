@@ -44,10 +44,10 @@ class VertexFX(vertex: JsonVertex) : StackPane() {
         }
 
         layoutXProperty().addListener { obs, old, new ->
-            jsonVertex.vertex.setProperty("x", new )
+            jsonVertex.vertex.setProperty("x", new)
         }
         layoutYProperty().addListener { obs, old, new ->
-            jsonVertex.vertex.setProperty("y", new )
+            jsonVertex.vertex.setProperty("y", new)
         }
     }
 

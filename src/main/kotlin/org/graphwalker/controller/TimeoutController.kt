@@ -21,7 +21,7 @@ class TimeoutController : Controller() {
 
     val timeoutAccural = SimpleLongProperty()
 
-    private var timeline : Timeline? = null
+    private var timeline: Timeline? = null
 
     init {
         subscribe<START_TIMER_EVENT> { startTimer() }
@@ -30,11 +30,11 @@ class TimeoutController : Controller() {
 
     private val checkForTimeout = EventHandler<ActionEvent> {
 
-        timeoutAccural.value +=  TIMEOUT_CHECK_INTERVAL
+        timeoutAccural.value += TIMEOUT_CHECK_INTERVAL
 
-        if( timeoutAccural >= TIMEOUTVAL ) {
+        if (timeoutAccural >= TIMEOUTVAL) {
 
-            if(timeline != null )
+            if (timeline != null)
                 timeline!!.stop()
 
             fire(TIMEOUT_EVENT)

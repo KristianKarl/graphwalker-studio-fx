@@ -5,7 +5,6 @@ import javafx.scene.shape.LineTo
 import javafx.scene.shape.MoveTo
 import javafx.scene.shape.Path
 import org.slf4j.LoggerFactory
-import tornadofx.*
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
