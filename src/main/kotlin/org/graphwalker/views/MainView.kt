@@ -271,6 +271,8 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         jsonModel.setModel(context.model)
                         if (context.pathGenerator != null) {
                             jsonModel.generator = context.pathGenerator.toString()
+                        } else {
+                            jsonModel.generator = "RandomPath(Edge_coverage(100))"
                         }
                         if (context.nextElement != null) {
                             startElementId = context.nextElement.id
@@ -348,6 +350,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     }
 
     private fun resetModels() {
+        startElementId = ""
         for (modelEditor in modelEditors) {
             for (v in modelEditor.vertices) {
                 v.rect.fill = Color.LIGHTBLUE
