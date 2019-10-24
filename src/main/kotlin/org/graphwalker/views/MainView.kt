@@ -222,6 +222,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     modelEditors.add(event.modelEditor)
                     tab(event.modelEditor) {
                         text = event.modelEditor.title
+                        subscribe<ClearAllModelsEvent> { event ->
+                            logger.debug("ClearAllModelsEvent received")
+                            close()
+                        }
                     }
                     logger.debug("ModelsAreChangedEvent fired")
                     fire(ModelsAreChangedEvent())
@@ -277,6 +281,10 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         modelEditors.add(modelEditor)
                         tab(modelEditor) {
                             text = jsonModel.name
+                            subscribe<ClearAllModelsEvent> { event ->
+                                logger.debug("ClearAllModelsEvent received")
+                                close()
+                            }
                         }
                     }
 
@@ -302,12 +310,6 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         logger.debug("LoadModelsFromFileEvent fired")
                         fire(LoadModelsFromFileEvent(File(fileName)))
                     }
-                }
-
-                subscribe<ClearAllModelsEvent> { event ->
-                    logger.debug("ClearAllModelsEvent received")
-                    tabs.removeAll()
-                    TODO("Above does not remove tabs")
                 }
             }
 
