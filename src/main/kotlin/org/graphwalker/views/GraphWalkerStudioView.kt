@@ -9,6 +9,7 @@ import javafx.stage.FileChooser
 import org.graphwalker.controller.TimeoutController
 import org.graphwalker.core.machine.Context
 import org.graphwalker.dsl.antlr.generator.GeneratorFactory
+import org.graphwalker.event.*
 import org.graphwalker.exceptions.UnsupportedFileFormat
 import org.graphwalker.io.factory.ContextFactory
 import org.graphwalker.io.factory.ContextFactoryScanner
@@ -25,23 +26,11 @@ import tornadofx.*
 import java.io.File
 import java.io.PrintWriter
 
-class LoadModelsFromFileEvent(val modelFile: File) : FXEvent()
-class LoadedModelsFromFileEvent : FXEvent()
-
-class NevModelEditorEvent(val modelEditor: ModelEditor) : FXEvent()
-
-class RunModelsEvent : FXEvent()
-class RunModelsDoneEvent : FXEvent()
-class RunModelsStopEvent : FXEvent()
-
-class ModelsAreChangedEvent : FXEvent()
-class ModelsAreSavedEvent : FXEvent()
-class ClearAllModelsEvent : FXEvent()
-
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
-    private var modelEditors = ArrayList<ModelEditor>()
+    private var propertyView : PropertiesView by singleAssign()
+    private var modelEditors = ArrayList<ModelEditorView>()
     private var startElementId = String()
 
     private val status: TaskStatus by inject()
@@ -55,168 +44,195 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
         var numOfModels = 0
 
-        left = vbox {
-            style {
-                backgroundColor += Color.BLACK
-            }
-
-            /**
-             * Add model button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.PLUS)
-                action {
-                    logger.debug("Open a new model editor")
-                    numOfModels++
-                    logger.debug("NevModelEditorEvent fired")
-                    fire(NevModelEditorEvent(ModelEditor("Untitled-$numOfModels")))
-                }
+        left = hbox {
+            vbox {
                 style {
                     backgroundColor += Color.BLACK
                 }
-            }
 
-            /**
-             * Open file button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.FOLDER_OPEN_ALT)
-                style {
-                    backgroundColor += Color.BLACK
-                }
-                action {
-                    logger.debug("ClearAllModelsEvent fired")
-                    fire(ClearAllModelsEvent())
-
-                    val fileNames = chooseFile(title = "Open GraphWalker model",
-                            filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker", "*.json"),
-                                    FileChooser.ExtensionFilter("Graphml - yEd", "*.graphml")),
-                            mode = FileChooserMode.Single)
-                    if (fileNames.isNotEmpty()) {
-                        logger.debug("LoadModelsFromFileEvent fired")
-                        fire(LoadModelsFromFileEvent(fileNames[0]))
+                /**
+                 * Add model button
+                 */
+                button {
+                    graphic = icon(FontAwesomeIcon.PLUS)
+                    action {
+                        logger.debug("Open a new model editor")
+                        numOfModels++
+                        logger.debug("NevModelEditorEvent fired")
+                        fire(NevModelEditorEvent(ModelEditorView("Untitled-$numOfModels")))
+                    }
+                    style {
+                        backgroundColor += Color.BLACK
                     }
                 }
-            }
 
-            /**
-             * Save file button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.SAVE)
-                disableProperty().set(true)
-                action {
-                    val fileNames = chooseFile(title = "Save GraphWalker model as",
-                            filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker file", "*.json")),
-                            mode = FileChooserMode.Save)
-                    if (fileNames.isNotEmpty()) {
-                        val contexts = createContexts()
-                        val outputFactory = ContextFactoryScanner.get(fileNames[0].toPath())
-                        PrintWriter(fileNames[0]).use { out -> out.println(outputFactory.getAsString(contexts)) }
-                        logger.debug("ModelsAreSavedEvent fired")
-                        fire(ModelsAreSavedEvent())
+                /**
+                 * Open file button
+                 */
+                button {
+                    graphic = icon(FontAwesomeIcon.FOLDER_OPEN_ALT)
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    action {
+                        logger.debug("ClearAllModelsEvent fired")
+                        fire(ClearAllModelsEvent())
+
+                        val fileNames = chooseFile(title = "Open GraphWalker model",
+                                filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker", "*.json"),
+                                        FileChooser.ExtensionFilter("Graphml - yEd", "*.graphml")),
+                                mode = FileChooserMode.Single)
+                        if (fileNames.isNotEmpty()) {
+                            logger.debug("LoadModelsFromFileEvent fired")
+                            fire(LoadModelsFromFileEvent(fileNames[0]))
+                        }
                     }
                 }
-                style {
-                    backgroundColor += Color.BLACK
-                }
-                subscribe<ModelsAreChangedEvent> { event ->
-                    logger.debug("ModelsAreChangedEvent received")
-                    disableProperty().set(false)
-                }
-            }
 
-            separator()
+                /**
+                 * Save file button
+                 */
+                button {
+                    graphic = icon(FontAwesomeIcon.SAVE)
+                    disableProperty().set(true)
+                    action {
+                        val fileNames = chooseFile(title = "Save GraphWalker model as",
+                                filters = arrayOf(FileChooser.ExtensionFilter("GraphWalker file", "*.json")),
+                                mode = FileChooserMode.Save)
+                        if (fileNames.isNotEmpty()) {
+                            val contexts = createContexts()
+                            val outputFactory = ContextFactoryScanner.get(fileNames[0].toPath())
+                            PrintWriter(fileNames[0]).use { out -> out.println(outputFactory.getAsString(contexts)) }
+                            logger.debug("ModelsAreSavedEvent fired")
+                            fire(ModelsAreSavedEvent())
+                        }
+                    }
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    subscribe<ModelsAreChangedEvent> { event ->
+                        logger.debug("ModelsAreChangedEvent received")
+                        disableProperty().set(false)
+                    }
+                }
+
+                separator()
 
 
-            /**
-             * Play button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.PLAY)
-                tooltip("Dry run by GraphWalker")
-                disableProperty().set(true)
-
-                style {
-                    backgroundColor += Color.BLACK
-                }
-                action {
-                    logger.debug("Will run the model(s)")
-                    graphic = icon(FontAwesomeIcon.PAUSE)
-                    logger.debug("RunModelsEvent fired")
-                    fire(RunModelsEvent())
-                }
-                subscribe<NevModelEditorEvent> { event ->
-                    logger.debug("NevModelEditorEvent received")
-                    disableProperty().set(false)
-                }
-                subscribe<LoadedModelsFromFileEvent> { event ->
-                    logger.debug("LoadedModelsFromFileEvent received")
-                    disableProperty().set(false)
-                }
-                subscribe<RunModelsDoneEvent> { event ->
-                    logger.debug("RunModelsDoneEvent received")
+                /**
+                 * Play button
+                 */
+                button {
                     graphic = icon(FontAwesomeIcon.PLAY)
+                    tooltip("Dry run by GraphWalker")
+                    disableProperty().set(true)
+
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    action {
+                        logger.debug("Will run the model(s)")
+                        graphic = icon(FontAwesomeIcon.PAUSE)
+                        logger.debug("RunModelsEvent fired")
+                        fire(RunModelsEvent())
+                    }
+                    subscribe<NevModelEditorEvent> { event ->
+                        logger.debug("NevModelEditorEvent received")
+                        disableProperty().set(false)
+                    }
+                    subscribe<LoadedModelsFromFileEvent> { event ->
+                        logger.debug("LoadedModelsFromFileEvent received")
+                        disableProperty().set(false)
+                    }
+                    subscribe<RunModelsDoneEvent> { event ->
+                        logger.debug("RunModelsDoneEvent received")
+                        graphic = icon(FontAwesomeIcon.PLAY)
+                    }
+                }
+
+                /**
+                 * Step button
+                 */
+                button {
+                    graphic = icon(FontAwesomeIcon.STEP_FORWARD)
+                    disableProperty().set(true)
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    subscribe<RunModelsEvent> { event ->
+                        logger.debug("RunModelsEvent received")
+                        disableProperty().set(false)
+                    }
+                    subscribe<RunModelsDoneEvent> { event ->
+                        logger.debug("RunModelsDoneEvent received")
+                        disableProperty().set(true)
+                    }
+                    subscribe<RunModelsStopEvent> { event ->
+                        logger.debug("RunModelsStopEvent received")
+                        disableProperty().set(true)
+                    }
+                }
+
+                /**
+                 * Stop button
+                 */
+                button {
+                    graphic = icon(FontAwesomeIcon.STOP)
+                    disableProperty().set(true)
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    action {
+                        logger.debug("RunModelsStopEvent fired")
+                        fire(RunModelsStopEvent())
+                        resetModels()
+                    }
+                    subscribe<RunModelsEvent> { event ->
+                        logger.debug("RunModelsEvent received")
+                        disableProperty().set(false)
+                    }
+                    subscribe<RunModelsStopEvent> { event ->
+                        logger.debug("RunModelsStopEvent received")
+                        disableProperty().set(true)
+                    }
+                }
+
+                separator()
+
+                /**
+                 * Properties button
+                 */
+                var propertyButton = button {
+                    graphic = icon(FontAwesomeIcon.LIST)
+                    disableProperty().set(true)
+                    action {
+                        logger.debug("OpenPropertiesView fired")
+                        fire(OpenPropertiesView())
+                    }
+                    style {
+                        backgroundColor += Color.BLACK
+                    }
+                    subscribe<NevModelEditorEvent> { event ->
+                        logger.debug("NevModelEditorEvent received")
+                        disableProperty().set(false)
+                    }
+                    subscribe<LoadedModelsFromFileEvent> { event ->
+                        logger.debug("LoadedModelsFromFileEvent received")
+                        disableProperty().set(false)
+                    }
                 }
             }
-
-            /**
-             * Step button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.STEP_FORWARD)
-                disableProperty().set(true)
-                style {
-                    backgroundColor += Color.BLACK
-                }
-                subscribe<RunModelsEvent> { event ->
-                    logger.debug("RunModelsEvent received")
-                    disableProperty().set(false)
-                }
-                subscribe<RunModelsDoneEvent> { event ->
-                    logger.debug("RunModelsDoneEvent received")
-                    disableProperty().set(true)
-                }
-                subscribe<RunModelsStopEvent> { event ->
-                    logger.debug("RunModelsStopEvent received")
-                    disableProperty().set(true)
-                }
-            }
-
-            /**
-             * Stop button
-             */
-            button {
-                graphic = icon(FontAwesomeIcon.STOP)
-                disableProperty().set(true)
-                style {
-                    backgroundColor += Color.BLACK
-                }
-                action {
-                    logger.debug("RunModelsStopEvent fired")
-                    fire(RunModelsStopEvent())
-                    resetModels()
-                }
-                subscribe<RunModelsEvent> { event ->
-                    logger.debug("RunModelsEvent received")
-                    disableProperty().set(false)
-                }
-                subscribe<RunModelsStopEvent> { event ->
-                    logger.debug("RunModelsStopEvent received")
-                    disableProperty().set(true)
-                }
-            }
-
-            separator()
-
-            button {
-                graphic = icon(FontAwesomeIcon.LIST)
-                disableProperty().set(true)
-                action {
-
-                }
-                style {
-                    backgroundColor += Color.BLACK
+            vbox {
+                hide()
+                propertyView = PropertiesView()
+                add(propertyView)
+                subscribe<OpenPropertiesView> { event ->
+                    logger.debug("OpenPropertiesView received")
+                    if (isVisible) {
+                        hide()
+                    } else {
+                        show()
+                    }
                 }
             }
         }
@@ -231,9 +247,9 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             tabs = tabpane {
                 subscribe<NevModelEditorEvent> { event ->
                     logger.debug("NevModelEditorEvent received")
-                    modelEditors.add(event.modelEditor)
-                    tab(event.modelEditor) {
-                        text = event.modelEditor.title
+                    modelEditors.add(event.modelEditorView)
+                    tab(event.modelEditorView) {
+                        text = event.modelEditorView.title
                         subscribe<ClearAllModelsEvent> { event ->
                             logger.debug("ClearAllModelsEvent received")
                             close()
@@ -290,7 +306,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                             startElementId = context.nextElement.id
                         }
 
-                        var modelEditor = ModelEditor(jsonModel)
+                        var modelEditor = ModelEditorView(jsonModel)
 
                         modelEditors.add(modelEditor)
                         tab(modelEditor) {
@@ -311,7 +327,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                 subscribe<SelectModelEditor> { event ->
                     logger.debug("SelectModelEditor received")
                     for (tab in tabs) {
-                        if (tab.content == event.modelEditor.root) {
+                        if (tab.content == event.modelEditorView.root) {
                             selectionModel.select(tab)
                             return@subscribe
                         }
@@ -323,6 +339,17 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         val fileName = app.parameters.named["model-file"]
                         logger.debug("LoadModelsFromFileEvent fired")
                         fire(LoadModelsFromFileEvent(File(fileName)))
+                    }
+                }
+
+                selectionModel.selectedItemProperty().addListener { observable, oldValue, newValue ->
+                    if (newValue == null) {
+                        return@addListener
+                    }
+                    var list = modelEditors.filter { it.root == newValue.content }
+                    if (list.isNotEmpty()) {
+                        var modelEditor = list.first()
+                        modelEditor.bindPropertyData(propertyView)
                     }
                 }
             }
@@ -341,6 +368,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             paddingAll = 4
         }
     }
+
 
     private fun createContexts(): ArrayList<Context> {
         var contexts = ArrayList<Context>()

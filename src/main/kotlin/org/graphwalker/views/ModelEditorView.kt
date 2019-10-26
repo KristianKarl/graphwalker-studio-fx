@@ -30,7 +30,7 @@ import java.io.File
 import javafx.scene.shape.LineTo as LineTo1
 
 
-class ModelEditor : View {
+class ModelEditorView : View {
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     val vertices = mutableListOf<VertexFX>()
@@ -77,6 +77,7 @@ class ModelEditor : View {
             }
         }
 
+        addEventFilter(MouseEvent.MOUSE_CLICKED, ::clicked)
         addEventFilter(MouseEvent.MOUSE_PRESSED, ::startDrag)
         addEventFilter(MouseEvent.MOUSE_DRAGGED, ::drag)
         addEventFilter(MouseEvent.MOUSE_RELEASED, ::stopDrag)
@@ -235,6 +236,33 @@ class ModelEditor : View {
         return vertexFX
     }
 
+    private fun clicked(evt: MouseEvent) {
+        vertices
+                .filter {
+                    val mousePt = it.sceneToLocal(evt.sceneX, evt.sceneY)
+                    it.contains(mousePt)
+                }
+                .firstOrNull()
+                .apply {
+                    if (this != null) {
+                        var vertexFX = this as VertexFX
+                        vertexFX.rect.strokeWidth = 2.0
+                    }
+                }
+        edges
+                .filter {
+                    val mousePt = it.sceneToLocal(evt.sceneX, evt.sceneY)
+                    it.contains(mousePt)
+                }
+                .firstOrNull()
+                .apply {
+                    if (this != null) {
+                        var edgeFX = this as EdgeFX
+                        edgeFX.path.strokeWidth = 2.0
+                    }
+                }
+    }
+
     private fun startDrag(evt: MouseEvent) {
         vertices
                 .filter {
@@ -270,6 +298,14 @@ class ModelEditor : View {
     private fun stopDrag(evt: MouseEvent) {
         selectedVertex = null
         selectedOffset = null
+    }
+
+    fun bindPropertyData(propertyView: PropertiesView) {
+        propertyView.modelName.bind(model.name.toProperty())
+        if (model.actions != null) {
+            propertyView.modelActions.bind(model.actions.toString().toProperty())
+        }
+
     }
 }
 

@@ -6,16 +6,16 @@ import org.graphwalker.core.event.Observer
 import org.graphwalker.core.machine.Machine
 import org.graphwalker.core.model.Element
 import org.graphwalker.core.model.Vertex
-import org.graphwalker.views.ModelEditor
+import org.graphwalker.views.ModelEditorView
 import org.slf4j.LoggerFactory
 import tornadofx.*
 
 class ProgressEvent(val completed: Double) : FXEvent()
-class SelectModelEditor(val modelEditor: ModelEditor) : FXEvent()
+class SelectModelEditor(val modelEditorView: ModelEditorView) : FXEvent()
 
-class ExecutionObserver(modelEditors: MutableCollection<ModelEditor>) : Observer, Controller() {
+class ExecutionObserver(modelEditorViews: MutableCollection<ModelEditorView>) : Observer, Controller() {
     private val logger = LoggerFactory.getLogger(this::class.java)
-    private val modelEditors = modelEditors
+    private val modelEditors = modelEditorViews
     private var lastTimeCheck = System.currentTimeMillis()
     private val interval = 200L
 
