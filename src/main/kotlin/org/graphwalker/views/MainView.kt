@@ -128,6 +128,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
 
             separator()
 
+
             /**
              * Play button
              */
@@ -207,6 +208,17 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
             }
 
             separator()
+
+            button {
+                graphic = icon(FontAwesomeIcon.LIST)
+                disableProperty().set(true)
+                action {
+
+                }
+                style {
+                    backgroundColor += Color.BLACK
+                }
+            }
         }
 
         center = stackpane {
