@@ -47,4 +47,14 @@ class EdgeFX(edge: JsonEdge, vertices: List<VertexFX>) : Group() {
             layoutYProperty().bind(endElement.yProperty().subtract(startElement.yProperty()).divide(2.0).add(startElement.yProperty()))
         }
     }
+
+    fun select() {
+        path.strokeWidth = 3.0
+        text.font = Font.font("DejaVu Sans Mono", FontWeight.BOLD, 16.0)
+    }
+
+    fun unselect() {
+        path.strokeWidth = 1.0
+        text.font = Font.font("DejaVu Sans Mono", FontWeight.NORMAL, 16.0)
+    }
 }

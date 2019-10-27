@@ -6,7 +6,9 @@ import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
+import javafx.scene.text.FontWeight
 import org.graphwalker.io.factory.json.JsonVertex
+import org.graphwalker.views.PropertiesView
 import tornadofx.*
 
 class VertexFX(vertex: JsonVertex) : StackPane() {
@@ -54,5 +56,19 @@ class VertexFX(vertex: JsonVertex) : StackPane() {
     fun getCenterPoint(): Point2D {
         return Point2D(layoutX + rect.width.div(2),
                 layoutY + rect.height.div(2))
+    }
+
+    fun select() {
+        rect.strokeWidth = 3.0
+        text.font = Font.font("DejaVu Sans Mono", FontWeight.BOLD, 16.0)
+    }
+
+    fun unselect() {
+        rect.strokeWidth = 1.0
+        text.font = Font.font("DejaVu Sans Mono", FontWeight.NORMAL, 16.0)
+    }
+
+    fun bindElementPropertyData(propertyView: PropertiesView) {
+        propertyView.elementName.bind(text.toProperty())
     }
 }

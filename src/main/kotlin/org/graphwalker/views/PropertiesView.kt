@@ -8,6 +8,7 @@ import tornadofx.*
 class PropertiesView() : View("PROPERTIES") {
     var modelName : TextField by singleAssign()
     var modelActions : TextArea by singleAssign()
+    var elementName : TextField by singleAssign()
 
     override val root = scrollpane {
         maxWidth = 300.0
@@ -30,7 +31,7 @@ class PropertiesView() : View("PROPERTIES") {
             fieldset("ELEMENT") {
                 field("Name") {
                     labelPosition = Orientation.VERTICAL
-                    textfield {
+                    elementName= textfield {
 
                     }
                 }

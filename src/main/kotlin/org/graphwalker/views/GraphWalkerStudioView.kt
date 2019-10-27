@@ -29,7 +29,7 @@ import java.io.PrintWriter
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
-    private var propertyView : PropertiesView by singleAssign()
+    var propertyView : PropertiesView by singleAssign()
     private var modelEditors = ArrayList<ModelEditorView>()
     private var startElementId = String()
 
@@ -59,7 +59,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         logger.debug("Open a new model editor")
                         numOfModels++
                         logger.debug("NevModelEditorEvent fired")
-                        fire(NevModelEditorEvent(ModelEditorView("Untitled-$numOfModels")))
+                        fire(NevModelEditorEvent(ModelEditorView("Untitled-$numOfModels", this)))
                     }
                     style {
                         backgroundColor += Color.BLACK
@@ -349,7 +349,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                     var list = modelEditors.filter { it.root == newValue.content }
                     if (list.isNotEmpty()) {
                         var modelEditor = list.first()
-                        modelEditor.bindPropertyData(propertyView)
+                        modelEditor.bindModelPropertyData(propertyView)
                     }
                 }
             }

@@ -36,6 +36,7 @@ class ModelEditorView : View {
     val vertices = mutableListOf<VertexFX>()
     val edges = mutableListOf<EdgeFX>()
     var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
+    var graphWalkerView : GraphWalkerStudioView by singleAssign()
     val ANIMATION_DURATION = 250.0
 
 
@@ -47,9 +48,12 @@ class ModelEditorView : View {
     private val PLOT_SIZE = 500
     private val N_SEGS = PLOT_SIZE / 10
 
-    constructor(title: String) : super(title)
+    constructor(title: String, graphWalkerStudioView : GraphWalkerStudioView) : super(title) {
+        graphWalkerView = graphWalkerStudioView
+    }
 
-    constructor(model: JsonModel) : super(model.name) {
+    constructor(model: JsonModel, graphWalkerStudioView : GraphWalkerStudioView) : super(model.name) {
+        graphWalkerView = graphWalkerStudioView
         this.model = model
         for (vertex in this.model.vertices) {
             vertices.add(createVertex(vertex))
@@ -237,6 +241,9 @@ class ModelEditorView : View {
     }
 
     private fun clicked(evt: MouseEvent) {
+        vertices.forEach { it.unselect() }
+        edges.forEach { it.unselect() }
+
         vertices
                 .filter {
                     val mousePt = it.sceneToLocal(evt.sceneX, evt.sceneY)
@@ -246,7 +253,8 @@ class ModelEditorView : View {
                 .apply {
                     if (this != null) {
                         var vertexFX = this as VertexFX
-                        vertexFX.rect.strokeWidth = 2.0
+                        vertexFX.select()
+                        vertexFX.bindElementPropertyData(graphWalkerView.propertyView)
                     }
                 }
         edges
@@ -258,7 +266,7 @@ class ModelEditorView : View {
                 .apply {
                     if (this != null) {
                         var edgeFX = this as EdgeFX
-                        edgeFX.path.strokeWidth = 2.0
+                        edgeFX.select()
                     }
                 }
     }
@@ -300,7 +308,7 @@ class ModelEditorView : View {
         selectedOffset = null
     }
 
-    fun bindPropertyData(propertyView: PropertiesView) {
+    fun bindModelPropertyData(propertyView: PropertiesView) {
         propertyView.modelName.bind(model.name.toProperty())
         if (model.actions != null) {
             propertyView.modelActions.bind(model.actions.toString().toProperty())
