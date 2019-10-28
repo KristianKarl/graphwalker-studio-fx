@@ -18,6 +18,7 @@ import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.MoveTo
 import javafx.util.Duration
+import org.graphwalker.event.DisableElementProperties
 import org.graphwalker.io.factory.json.JsonModel
 import org.graphwalker.io.factory.json.JsonVertex
 import org.graphwalker.model.ArrowHead
@@ -36,7 +37,7 @@ class ModelEditorView : View {
     val vertices = mutableListOf<VertexFX>()
     val edges = mutableListOf<EdgeFX>()
     var fontLoader: FontLoader = Toolkit.getToolkit().fontLoader
-    var graphWalkerView : GraphWalkerStudioView by singleAssign()
+    var graphWalkerView: GraphWalkerStudioView by singleAssign()
     val ANIMATION_DURATION = 250.0
 
 
@@ -48,11 +49,11 @@ class ModelEditorView : View {
     private val PLOT_SIZE = 500
     private val N_SEGS = PLOT_SIZE / 10
 
-    constructor(title: String, graphWalkerStudioView : GraphWalkerStudioView) : super(title) {
+    constructor(title: String, graphWalkerStudioView: GraphWalkerStudioView) : super(title) {
         graphWalkerView = graphWalkerStudioView
     }
 
-    constructor(model: JsonModel, graphWalkerStudioView : GraphWalkerStudioView) : super(model.name) {
+    constructor(model: JsonModel, graphWalkerStudioView: GraphWalkerStudioView) : super(model.name) {
         graphWalkerView = graphWalkerStudioView
         this.model = model
         for (vertex in this.model.vertices) {
@@ -252,9 +253,9 @@ class ModelEditorView : View {
                 .firstOrNull()
                 .apply {
                     if (this != null) {
-                        var vertexFX = this as VertexFX
+                        var vertexFX = this
                         vertexFX.select()
-                        vertexFX.bindElementPropertyData(graphWalkerView.propertyView)
+                        return@clicked
                     }
                 }
         edges
@@ -265,10 +266,13 @@ class ModelEditorView : View {
                 .firstOrNull()
                 .apply {
                     if (this != null) {
-                        var edgeFX = this as EdgeFX
+                        var edgeFX = this
                         edgeFX.select()
+                        return@clicked
                     }
                 }
+        logger.debug("DisableElementProperties fired")
+        FX.eventbus.fire(DisableElementProperties())
     }
 
     private fun startDrag(evt: MouseEvent) {

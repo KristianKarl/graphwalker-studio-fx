@@ -19,8 +19,6 @@ import org.graphwalker.io.factory.json.JsonModel
 import org.graphwalker.io.factory.yed.YEdContextFactory
 import org.graphwalker.java.test.TestExecutor
 import org.graphwalker.observer.ExecutionObserver
-import org.graphwalker.observer.ProgressEvent
-import org.graphwalker.observer.SelectModelEditor
 import org.slf4j.LoggerFactory
 import tornadofx.*
 import java.io.File
@@ -29,7 +27,7 @@ import java.io.PrintWriter
 class GraphWalkerStudioView : View("GraphWalker Studio FX") {
     private val logger = LoggerFactory.getLogger(this::class.java)
     private var tabs: TabPane by singleAssign()
-    var propertyView : PropertiesView by singleAssign()
+    var propertyView: PropertiesView by singleAssign()
     private var modelEditors = ArrayList<ModelEditorView>()
     private var startElementId = String()
 
@@ -59,7 +57,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                         logger.debug("Open a new model editor")
                         numOfModels++
                         logger.debug("NevModelEditorEvent fired")
-                        fire(NevModelEditorEvent(ModelEditorView("Untitled-$numOfModels", this)))
+                        fire(NevModelEditorEvent(ModelEditorView("Untitled-$numOfModels", this@GraphWalkerStudioView)))
                     }
                     style {
                         backgroundColor += Color.BLACK
@@ -306,7 +304,7 @@ class GraphWalkerStudioView : View("GraphWalker Studio FX") {
                             startElementId = context.nextElement.id
                         }
 
-                        var modelEditor = ModelEditorView(jsonModel)
+                        var modelEditor = ModelEditorView(jsonModel, this@GraphWalkerStudioView)
 
                         modelEditors.add(modelEditor)
                         tab(modelEditor) {

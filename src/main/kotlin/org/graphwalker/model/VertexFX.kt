@@ -7,11 +7,14 @@ import javafx.scene.paint.Color
 import javafx.scene.shape.Rectangle
 import javafx.scene.text.Font
 import javafx.scene.text.FontWeight
+import org.graphwalker.event.VertexSelectedEvent
 import org.graphwalker.io.factory.json.JsonVertex
-import org.graphwalker.views.PropertiesView
+import org.slf4j.LoggerFactory
 import tornadofx.*
 
 class VertexFX(vertex: JsonVertex) : StackPane() {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     val jsonVertex = vertex
     var text: Label
     var rect: Rectangle
@@ -61,14 +64,12 @@ class VertexFX(vertex: JsonVertex) : StackPane() {
     fun select() {
         rect.strokeWidth = 3.0
         text.font = Font.font("DejaVu Sans Mono", FontWeight.BOLD, 16.0)
+        logger.debug("VertexSelectedEvent fired")
+        FX.eventbus.fire(VertexSelectedEvent(this@VertexFX))
     }
 
     fun unselect() {
         rect.strokeWidth = 1.0
         text.font = Font.font("DejaVu Sans Mono", FontWeight.NORMAL, 16.0)
-    }
-
-    fun bindElementPropertyData(propertyView: PropertiesView) {
-        propertyView.elementName.bind(text.toProperty())
     }
 }

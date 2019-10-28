@@ -8,10 +8,14 @@ import javafx.scene.shape.Path
 import javafx.scene.text.Font
 import javafx.scene.text.FontPosture
 import javafx.scene.text.FontWeight
+import org.graphwalker.event.EdgeSelectedEvent
 import org.graphwalker.io.factory.json.JsonEdge
+import org.slf4j.LoggerFactory
 import tornadofx.*
 
 class EdgeFX(edge: JsonEdge, vertices: List<VertexFX>) : Group() {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+
     var jsonEdge = edge
     var path = Path()
     var text = Label()
@@ -51,6 +55,8 @@ class EdgeFX(edge: JsonEdge, vertices: List<VertexFX>) : Group() {
     fun select() {
         path.strokeWidth = 3.0
         text.font = Font.font("DejaVu Sans Mono", FontWeight.BOLD, 16.0)
+        logger.debug("EdgeSelectedEvent fired")
+        FX.eventbus.fire(EdgeSelectedEvent(this@EdgeFX))
     }
 
     fun unselect() {

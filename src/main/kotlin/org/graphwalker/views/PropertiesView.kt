@@ -3,12 +3,20 @@ package org.graphwalker.views
 import javafx.geometry.Orientation
 import javafx.scene.control.TextArea
 import javafx.scene.control.TextField
+import org.graphwalker.controller.PropertyController
+import org.slf4j.LoggerFactory
 import tornadofx.*
 
-class PropertiesView() : View("PROPERTIES") {
-    var modelName : TextField by singleAssign()
-    var modelActions : TextArea by singleAssign()
-    var elementName : TextField by singleAssign()
+class PropertiesView : View() {
+    private val logger = LoggerFactory.getLogger(this::class.java)
+    val controller: PropertyController by inject()
+
+    var modelName: TextField by singleAssign()
+    var modelActions: TextArea by singleAssign()
+
+    init {
+//        find(PropertyController::class)
+    }
 
     override val root = scrollpane {
         maxWidth = 300.0
@@ -29,11 +37,10 @@ class PropertiesView() : View("PROPERTIES") {
                 }
             }
             fieldset("ELEMENT") {
+                disableProperty().bind(controller.dataForElementEnable)
                 field("Name") {
                     labelPosition = Orientation.VERTICAL
-                    elementName= textfield {
-
-                    }
+                    textfield(controller.dataForElementName)
                 }
                 field("Shared Name") {
                     labelPosition = Orientation.VERTICAL
@@ -69,7 +76,7 @@ class PropertiesView() : View("PROPERTIES") {
 
                     }
                 }
-                var l = label() {
+                var l = label {
                     text = "Delay 0 ms"
                 }
                 var s = slider(0, 1000) {

@@ -6,12 +6,11 @@ import org.graphwalker.core.event.Observer
 import org.graphwalker.core.machine.Machine
 import org.graphwalker.core.model.Element
 import org.graphwalker.core.model.Vertex
+import org.graphwalker.event.ProgressEvent
+import org.graphwalker.event.SelectModelEditor
 import org.graphwalker.views.ModelEditorView
 import org.slf4j.LoggerFactory
 import tornadofx.*
-
-class ProgressEvent(val completed: Double) : FXEvent()
-class SelectModelEditor(val modelEditorView: ModelEditorView) : FXEvent()
 
 class ExecutionObserver(modelEditorViews: MutableCollection<ModelEditorView>) : Observer, Controller() {
     private val logger = LoggerFactory.getLogger(this::class.java)
